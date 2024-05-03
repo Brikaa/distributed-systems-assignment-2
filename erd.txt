@@ -1,0 +1,6 @@
+- User
+  - id
+  - name
+  - email
+  - password
+  - isAdmin

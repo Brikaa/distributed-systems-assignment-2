@@ -1,0 +1,32 @@
+- Admins
+  - Delete users, set users as admins
+    - Edit users info, suspend users?
+  - Accept/reject new course content
+  - Edit course details, add/remove content to it
+  - Track platform usage (number of registered students, number of registered instructors)
+    - Page hits?
+  - View courses, their popularity (the number of enrolled students)
+  - View a course's ratings (average number of stars, individual stars)
+  - View a course's reviews (individual reviews)
+
+- Instructors
+  - Register, log in
+  - Update user info (change password)
+  - Create a course
+  - Upload/delete course material
+  - View courses and their information (my courses and all courses)
+  - Search courses (my courses and all courses) (by name, category)
+  - Accept/reject student enrollment
+
+- Students
+  - Register, log in
+  - Update user info (change email)
+  - View current (accepted) and past enrollments (finished, rejected)
+    - Real time notifications?
+  - View courses and their information
+  - Search courses (by name, category)
+  - Create course enrollment
+  - Cancel course enrollment
+  - View notifications (course enrollment updates)
+  - Rate a course
+  - Review a course
