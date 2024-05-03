@@ -3,4 +3,35 @@
   - name
   - email
   - password
-  - isAdmin
+  - role: admin | student | instructor
+  - experience
+  - bio
+
+- Course
+  - id
+  - name
+  - description
+  - startDate
+  - endDate
+  - category
+  - capacity
+
+- Review
+  - id
+  - userId
+  - courseId
+  - stars
+  - description
+
+- Enrollment
+  - id
+  - studentId
+  - courseId
+  - status: pending | accepted | rejected
+
+- Notification
+  - id
+  - userId
+  - title
+  - body
+  - isRead

@@ -1,0 +1,5 @@
+services:
+  elearning-server:
+    build: .
+    ports:
+      - '8080:8080'
