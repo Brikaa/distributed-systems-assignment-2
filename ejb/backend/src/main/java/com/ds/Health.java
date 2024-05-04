@@ -1,7 +1,5 @@
 package com.ds;
 
-import java.sql.SQLException;
-
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 import jakarta.ws.rs.GET;
@@ -15,7 +13,7 @@ public class Health {
 
     @GET
     @Path("/")
-    public String health() throws SQLException {
+    public String health() {
         return "Up and running";
     }
 }

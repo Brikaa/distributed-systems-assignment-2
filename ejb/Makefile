@@ -1,5 +1,5 @@
 start:
-	docker compose up -d --build
+	docker compose up -t 1 -d --build
 	make logs
 
 stop:

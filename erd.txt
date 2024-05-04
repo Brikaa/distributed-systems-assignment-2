@@ -9,6 +9,7 @@
 
 - Course
   - id
+  - instructorId
   - name
   - description
   - startDate
