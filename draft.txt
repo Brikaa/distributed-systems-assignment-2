@@ -1,5 +1,5 @@
 - Admins
-  - Delete users, set users as admins
+  - Delete users, set users as admins, edit users info
     - Edit users info, suspend users?
   - Accept/reject new course content
   - Edit course details, add/remove content to it

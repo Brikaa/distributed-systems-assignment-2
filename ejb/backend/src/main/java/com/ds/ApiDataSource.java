@@ -10,7 +10,7 @@ import jakarta.ejb.Startup;
 
 @Singleton
 @Startup
-public class AppDataSource {
+public class ApiDataSource {
     private DataSource dataSource;
 
     @PostConstruct
