@@ -11,7 +11,8 @@
 
 - Instructors
   - Register, log in
-  - Update user info (change password)
+  - View user info
+  - Update user info (change password, experience, bio)
   - Create a course
   - Upload/delete course material
   - View courses and their information (my courses and all courses)
@@ -20,7 +21,8 @@
 
 - Students
   - Register, log in
-  - Update user info (change email)
+  - View user info
+  - Update user info (change password, bio)
   - View current (accepted) and past enrollments (finished, rejected)
     - Real time notifications?
   - View courses and their information
@@ -35,3 +37,4 @@
   - Use the application server's connection pool?
   - Use the application server's security domain instead of filters?
   - Auth token in http-only cookie?
+  - Don't cast to text when comparing UUID

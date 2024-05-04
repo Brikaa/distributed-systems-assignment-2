@@ -25,7 +25,7 @@ public class Api {
     @GET
     @Path("/health")
     public Response health() throws SQLException {
-        return AuthUtil.withRole(dataSource, request, "admin", () -> {
+        return AuthUtil.withRole(dataSource, request, "admin", (_conn, _rs) -> {
             return Response.status(200).entity(new MessageResponse("Up and running")).build();
         });
     }

@@ -1,4 +1,4 @@
-FROM eclipse-temurin:11
+FROM eclipse-temurin:22
 
 WORKDIR /opt/wildfly
 RUN apt-get update && \
