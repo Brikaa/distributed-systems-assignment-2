@@ -30,3 +30,7 @@
   - View notifications (course enrollment updates)
   - Rate a course
   - Review a course
+
+- Technical debt
+  - Use the application server's connection pool?
+  - Use the application server's security domain instead of filters?

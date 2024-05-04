@@ -4,7 +4,7 @@ CREATE TYPE role AS ENUM ('ADMIN', 'STUDENT', 'INSTRUCTOR');
 
 CREATE TABLE AppUser (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(255) UNIQUE NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password varchar(255) NOT NULL,
     role role NOT NULL,
