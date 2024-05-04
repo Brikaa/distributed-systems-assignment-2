@@ -10,7 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Response;
 
 interface Callback {
-    public Response apply(Connection conn, ResultSet rs);
+    public Response apply(Connection conn, ResultSet rs) throws SQLException;
 };
 
 public class AuthUtil {
