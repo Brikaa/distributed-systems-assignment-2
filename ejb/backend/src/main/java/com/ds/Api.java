@@ -14,6 +14,7 @@ import jakarta.ejb.Stateless;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -42,8 +43,8 @@ public class Api {
             return Response.status(401).build();
         }
         String authToken = authHeader.replaceFirst("(?i)Bearer ", "");
-        // Get username and password
-        // Auth token: base64(base64(username):base64(password))
+        // Get id and password
+        // Auth token: base64(base64(id):base64(password))
         String[] idPass = null;
         String id = null;
         String password = null;
@@ -77,6 +78,26 @@ public class Api {
     @Path("/health")
     public Response health() {
         return Response.ok().entity(new MessageResponse("Up and running")).build();
+    }
+
+    @POST
+    @Path("/login")
+    public Response login(LoginRequest req) throws SQLException {
+        try (Connection conn = dataSource.getInstance().getConnection();
+                PreparedStatement st = conn
+                        .prepareStatement("SELECT id FROM AppUser where (name = ? OR email = ?) AND password = ?")) {
+            st.setString(1, req.nameOrEmail);
+            st.setString(2, req.nameOrEmail);
+            st.setString(3, req.password);
+            ResultSet rs = st.executeQuery();
+            if (!rs.next()) {
+                return Response.status(401).entity(new MessageResponse("Invalid name/email or password")).build();
+            }
+            String encodedId = Base64.getEncoder().encodeToString(rs.getObject("id", UUID.class).toString().getBytes());
+            String encodedPassword = Base64.getEncoder().encodeToString(req.password.getBytes());
+            String token = Base64.getEncoder().encodeToString((encodedId + ":" + encodedPassword).getBytes());
+            return Response.status(200).entity(new TokenResponse(token)).build();
+        }
     }
 
     @GET
@@ -192,7 +213,7 @@ class UserResponse {
     public String name;
     public String email;
     public String role;
-    public int experience;
+    public Integer experience;
     public String bio;
 }
 
@@ -204,6 +225,14 @@ class MessageResponse {
     }
 }
 
+class TokenResponse {
+    public String token;
+
+    public TokenResponse(String token) {
+        this.token = token;
+    }
+}
+
 class UserUpdateRequest {
     public String name;
     public String email;
@@ -211,6 +240,11 @@ class UserUpdateRequest {
     public String role;
     public Integer experience;
     public String bio;
+}
+
+class LoginRequest {
+    public String nameOrEmail;
+    public String password;
 }
 
 interface Binding {
