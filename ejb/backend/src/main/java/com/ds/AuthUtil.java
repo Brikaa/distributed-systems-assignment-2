@@ -14,17 +14,20 @@ interface Callback {
 };
 
 public class AuthUtil {
+    private static final String AUTH_SCHEME = "(?i)Bearer";
+
     public static Response withRole(Connection conn, HttpServletRequest request, String role, Callback callback)
             throws SQLException {
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null) {
             return Response.status(401).build();
         }
+        String authToken = authHeader.replaceFirst(AUTH_SCHEME + " ", "");
         // Get username and password
         // Auth token: base64(base64(username):base64(password))
         String[] idPass = null;
         try {
-            String decoded = new String(Base64.getDecoder().decode(authHeader));
+            String decoded = new String(Base64.getDecoder().decode(authToken));
             idPass = decoded.split(":", 2);
         } catch (IllegalArgumentException e) {
         }
