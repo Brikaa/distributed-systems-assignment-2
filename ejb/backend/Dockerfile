@@ -9,7 +9,7 @@ RUN apt-get update && \
     rm -r wildfly-32.0.0.Final*
 
 WORKDIR /app
-COPY elearning .
+COPY . .
 RUN --mount=type=cache,target=/root/.m2 \
     mvn clean package && cp target/elearning.war /opt/wildfly/standalone/deployments
 
