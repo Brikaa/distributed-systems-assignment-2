@@ -33,7 +33,6 @@ public class Api {
     private HttpServletRequest request;
 
     private final String ADMIN_ROLE = "ADMIN";
-    private final String STUDENT_ROLE = "STUDENT";
     private final String INSTRUCTOR_ROLE = "INSTRUCTOR";
 
     private Response withRole(HttpServletRequest request, String role, Callback callback)
@@ -90,7 +89,8 @@ public class Api {
                     name = rs.getString("name");
                     email = rs.getString("email");
                     role = rs.getString("role");
-                    experience = rs.getInt("experience");
+                    if (role.equals(INSTRUCTOR_ROLE))
+                        experience = rs.getInt("experience");
                     bio = rs.getString("bio");
                 }
             }).build();
@@ -109,66 +109,80 @@ public class Api {
         });
     }
 
+    private Response updateUser(Connection conn, String role, UUID sourceId, UUID targetId, UserUpdateRequest req)
+            throws SQLException {
+        if (req == null) {
+            return Response.status(400).build();
+        }
+        StringBuilder query = new StringBuilder();
+        query.append("UPDATE AppUser SET ");
+        ArrayList<String> updates = new ArrayList<>();
+        LinkedList<Binding> bindings = new LinkedList<>();
+        if (req.name != null) {
+            updates.add("name = ?");
+            bindings.addLast((i, st) -> st.setString(i, req.name));
+        }
+        if (req.email != null) {
+            updates.add("email = ?");
+            bindings.addLast((i, st) -> st.setString(i, req.email));
+        }
+        if (req.password != null) {
+            updates.add("password = ?");
+            bindings.addLast((i, st) -> st.setString(i, req.password));
+        }
+        if (role.equals(ADMIN_ROLE) && sourceId != targetId && req.role != null) {
+            updates.add("role = ?");
+            bindings.addLast((i, st) -> st.setString(i, req.role));
+        }
+        if ((role.equals(ADMIN_ROLE) || role.equals(INSTRUCTOR_ROLE)) && req.experience != null) {
+            updates.add("experience = ?");
+            bindings.addLast((i, st) -> st.setInt(i, req.experience));
+        }
+        if (req.bio != null) {
+            updates.add("bio = ?");
+            bindings.addLast((i, st) -> st.setString(i, req.bio));
+        }
+
+        if (updates.size() == 0) {
+            return Response.status(400).build();
+        }
+
+        query.append(String.join(",", updates));
+        query.append(" WHERE id = ?");
+
+        try (PreparedStatement st = conn.prepareStatement(query.toString())) {
+            int i = 1;
+            while (!bindings.isEmpty()) {
+                bindings.getFirst().apply(i++, st);
+                bindings.removeFirst();
+            }
+            st.setObject(i++, targetId);
+            st.executeUpdate();
+            return Response.ok().build();
+        }
+    }
+
     @PUT
     @Path("/user/{id}")
     public Response updateUser(@PathParam("id") UUID id, UserUpdateRequest req) throws SQLException {
-        return withRole(request, ADMIN_ROLE, (conn, _rs) -> {
-            if (req == null) {
-                return Response.status(400).build();
-            }
+        return withRole(request, ADMIN_ROLE, (conn, rs) -> {
             try (PreparedStatement st = conn.prepareStatement("SELECT id FROM AppUser WHERE id = ?")) {
                 st.setObject(1, id);
-                ResultSet rs = st.executeQuery();
-                if (!rs.next()) {
+                ResultSet foundRs = st.executeQuery();
+                if (!foundRs.next()) {
                     return Response.status(404).build();
                 }
             }
-            StringBuilder query = new StringBuilder();
-            query.append("UPDATE AppUser SET ");
-            ArrayList<String> updates = new ArrayList<>();
-            LinkedList<Binding> bindings = new LinkedList<>();
-            if (req.name != null) {
-                updates.add("name = ?");
-                bindings.addLast((i, st) -> st.setString(i, req.name));
-            }
-            if (req.email != null) {
-                updates.add("email = ?");
-                bindings.addLast((i, st) -> st.setString(i, req.email));
-            }
-            if (req.password != null) {
-                updates.add("password = ?");
-                bindings.addLast((i, st) -> st.setString(i, req.password));
-            }
-            if (req.role != null) {
-                updates.add("role = ?");
-                bindings.addLast((i, st) -> st.setString(i, req.role));
-            }
-            if (req.experience != null) {
-                updates.add("experience = ?");
-                bindings.addLast((i, st) -> st.setInt(i, req.experience));
-            }
-            if (req.bio != null) {
-                updates.add("bio = ?");
-                bindings.addLast((i, st) -> st.setString(i, req.bio));
-            }
+            return updateUser(conn, ADMIN_ROLE, rs.getObject("id", UUID.class), id, req);
+        });
+    }
 
-            if (updates.size() == 0) {
-                return Response.status(400).build();
-            }
-
-            query.append(String.join(",", updates));
-            query.append(" WHERE id = ?");
-
-            try (PreparedStatement st = conn.prepareStatement(query.toString())) {
-                int i = 1;
-                while (!bindings.isEmpty()) {
-                    bindings.getFirst().apply(i++, st);
-                    bindings.removeFirst();
-                }
-                st.setObject(i++, id);
-                st.executeUpdate();
-                return Response.ok().build();
-            }
+    @PUT
+    @Path("/user")
+    public Response updateMyUser(UserUpdateRequest req) throws SQLException {
+        return withRole(request, "*", (conn, rs) -> {
+            UUID myId = rs.getObject("id", UUID.class);
+            return updateUser(conn, "*", myId, myId, req);
         });
     }
 }
