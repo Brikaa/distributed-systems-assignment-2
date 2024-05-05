@@ -9,6 +9,8 @@ import java.util.Base64;
 import java.util.LinkedList;
 import java.util.UUID;
 
+import com.ds.requests.*;
+
 import jakarta.ejb.EJB;
 import jakarta.ejb.Stateless;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,7 +44,7 @@ public class Api {
         if (authHeader == null) {
             return Response.status(401).build();
         }
-        String authToken = authHeader.replaceFirst("(?i)Bearer ", "");
+        String authToken = authHeader.replaceFirst("(?i)Basic ", "");
         // Get id and password
         // Auth token: base64(base64(id):base64(password))
         String[] idPass = null;
@@ -80,6 +82,12 @@ public class Api {
         return Response.ok().entity(new MessageResponse("Up and running")).build();
     }
 
+    private String createToken(UUID id, String password) {
+        String encodedId = Base64.getEncoder().encodeToString(id.toString().getBytes());
+        String encodedPassword = Base64.getEncoder().encodeToString(password.getBytes());
+        return Base64.getEncoder().encodeToString((encodedId + ":" + encodedPassword).getBytes());
+    }
+
     @POST
     @Path("/login")
     public Response login(LoginRequest req) throws SQLException {
@@ -93,10 +101,8 @@ public class Api {
             if (!rs.next()) {
                 return Response.status(401).entity(new MessageResponse("Invalid name/email or password")).build();
             }
-            String encodedId = Base64.getEncoder().encodeToString(rs.getObject("id", UUID.class).toString().getBytes());
-            String encodedPassword = Base64.getEncoder().encodeToString(req.password.getBytes());
-            String token = Base64.getEncoder().encodeToString((encodedId + ":" + encodedPassword).getBytes());
-            return Response.status(200).entity(new TokenResponse(token)).build();
+            String token = createToken(rs.getObject("id", UUID.class), req.password);
+            return Response.ok().entity(new TokenResponse(token)).build();
         }
     }
 
@@ -179,7 +185,8 @@ public class Api {
             }
             st.setObject(i++, targetId);
             st.executeUpdate();
-            return Response.ok().build();
+            String token = createToken(targetId, req.password);
+            return Response.ok().entity(new TokenResponse(token)).build();
         }
     }
 
@@ -231,20 +238,6 @@ class TokenResponse {
     public TokenResponse(String token) {
         this.token = token;
     }
-}
-
-class UserUpdateRequest {
-    public String name;
-    public String email;
-    public String password;
-    public String role;
-    public Integer experience;
-    public String bio;
-}
-
-class LoginRequest {
-    public String nameOrEmail;
-    public String password;
 }
 
 interface Binding {

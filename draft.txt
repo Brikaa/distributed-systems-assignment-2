@@ -38,3 +38,7 @@
   - Use the application server's security domain instead of filters?
   - Auth token in http-only cookie?
   - Don't cast to text when comparing UUID
+
+- TODO
+  - Return token on update user in case password is changed
+  - Register, update user business checks
