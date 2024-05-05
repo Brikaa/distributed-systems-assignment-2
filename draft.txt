@@ -2,6 +2,8 @@
   - Delete users, set users as admins, edit users info
     - Edit users info, suspend users?
   - Accept/reject new course content
+    - What is course content?
+  - Remove courses
   - Edit course details, add/remove content to it
   - Track platform usage (number of registered students, number of registered instructors)
     - Page hits?
@@ -38,7 +40,10 @@
   - Use the application server's security domain instead of filters?
   - Auth token in http-only cookie?
   - Don't cast to text when comparing UUID
+  - Document that course startDate and endDate are in epoch seconds
 
 - TODO
-  - Return token on update user in case password is changed
-  - Register, update user business checks
+  - Add course
+    - Inputs name, description, startDate, endDate, category, capacity
+  - Remove course
+  - Edit course

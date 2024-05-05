@@ -109,7 +109,7 @@ public class Api {
         }
     }
 
-    private String getInvalidNameError(String name) {
+    private String getInvalidUserNameError(String name) {
         return name.isEmpty() ? "Name can't be empty" : null;
     }
 
@@ -135,7 +135,7 @@ public class Api {
 
         {
             String err = null;
-            if ((err = getInvalidNameError(req.name)) != null)
+            if ((err = getInvalidUserNameError(req.name)) != null)
                 return Response.status(400).entity(new MessageResponse(err)).build();
             if ((err = getInvalidEmailError(req.email)) != null)
                 return Response.status(400).entity(new MessageResponse(err)).build();
@@ -207,7 +207,7 @@ public class Api {
         String err = null;
 
         if (req.name != null) {
-            if ((err = getInvalidNameError(req.name)) != null)
+            if ((err = getInvalidUserNameError(req.name)) != null)
                 return Response.status(400).entity(new MessageResponse(err)).build();
             updates.add("name = ?");
             bindings.addLast((i, st) -> st.setString(i, req.name));
@@ -288,6 +288,63 @@ public class Api {
         return withRole(request, "*", (conn, rs) -> {
             UUID myId = rs.getObject("id", UUID.class);
             return updateUser(conn, "*", myId, myId, req);
+        });
+    }
+
+    private String getInvalidCourseNameError(String name) {
+        return name.isEmpty() ? "Name can't be empty" : null;
+    }
+
+    private String getInvalidCourseDatesError(Long startDate, Long endDate) {
+        if (endDate < startDate)
+            return "Start date can't be before the end date";
+        if ((startDate * 1000) < System.currentTimeMillis())
+            return "Course can't start in the past";
+        return null;
+    }
+
+    private String getInvalidCategoryError(String category) {
+        return category.isEmpty() ? "Category can't be empty" : null;
+    }
+
+    private String getInvalidCapacityError(int capacity) {
+        return capacity <= 0 ? "Capacity must be a positive number" : null;
+    }
+
+    @POST
+    @Path("/course")
+    public Response addCourse(CourseAddRequest req) throws SQLException {
+        return withRole(request, INSTRUCTOR_ROLE, (conn, rs) -> {
+            if (req.name.equals(null) || req.description == null || req.startDate == null || req.endDate == null
+                    || req.category == null || req.capacity == null)
+                return Response.status(400).build();
+
+            {
+                String err = null;
+                if ((err = getInvalidCourseNameError(req.name)) != null)
+                    return Response.status(400).entity(new MessageResponse(err)).build();
+                if ((err = getInvalidCourseDatesError(req.startDate, req.endDate)) != null)
+                    return Response.status(400).entity(new MessageResponse(err)).build();
+                if ((err = getInvalidCategoryError(req.category)) != null)
+                    return Response.status(400).entity(new MessageResponse(err)).build();
+                if ((err = getInvalidCapacityError(req.capacity)) != null)
+                    return Response.status(400).entity(new MessageResponse(err)).build();
+            }
+
+            try (PreparedStatement st = conn.prepareStatement(
+                    "INSERT INTO Course (instructorId, name, description, startDate, endDate, category, capacity) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+                int i = 1;
+                st.setObject(i++, rs.getObject("id", UUID.class));
+                st.setString(i++, req.name);
+                st.setString(i++, req.description);
+                st.setLong(i++, req.startDate);
+                st.setLong(i++, req.endDate);
+                st.setString(i++, req.category);
+                st.setInt(i++, req.capacity);
+                st.executeUpdate();
+            }
+
+            return Response.ok().build();
         });
     }
 }
