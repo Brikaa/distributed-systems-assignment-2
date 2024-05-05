@@ -496,7 +496,7 @@ public class Api {
     }
 
     @GET
-    @Path("/course/")
+    @Path("/course")
     public Response listCourses(@QueryParam("sortBy") String sortBy, @QueryParam("name") String name,
             @QueryParam("category") String category, @QueryParam("mine") Boolean mine) throws SQLException {
         return withRole("*", (conn, accountRs) -> {
