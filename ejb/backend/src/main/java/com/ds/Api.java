@@ -42,7 +42,7 @@ public class Api {
     private final String STUDENT_ROLE = "STUDENT";
     private final Pattern EMAIL_REGEX = Pattern.compile("^[a-zA-Z0-9_!#$%&’*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$");
 
-    private Response withRole(HttpServletRequest request, String[] roles, Callback callback) throws SQLException {
+    private Response withRole(String[] roles, Callback callback) throws SQLException {
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null) {
             return Response.status(401).build();
@@ -88,11 +88,11 @@ public class Api {
         }
     }
 
-    private Response withRole(HttpServletRequest request, String role, Callback callback) throws SQLException {
+    private Response withRole(String role, Callback callback) throws SQLException {
         if (role.equals("*"))
-            return withRole(request, new String[] {}, callback);
+            return withRole(new String[] {}, callback);
         else
-            return withRole(request, new String[] { role }, callback);
+            return withRole(new String[] { role }, callback);
     }
 
     @GET
@@ -184,7 +184,7 @@ public class Api {
     @GET
     @Path("/user")
     public Response getUser() throws SQLException {
-        return withRole(request, "*", (_conn, rs) -> {
+        return withRole("*", (_conn, rs) -> {
             return Response.ok().entity(new UserResponse() {
                 {
                     id = rs.getObject("id", UUID.class);
@@ -202,7 +202,7 @@ public class Api {
     @DELETE
     @Path("/user/{id}")
     public Response deleteUser(@PathParam("id") UUID id) throws SQLException {
-        return withRole(request, ADMIN_ROLE, (conn, _rs) -> {
+        return withRole(ADMIN_ROLE, (conn, _rs) -> {
             try (PreparedStatement st = conn.prepareStatement("DELETE FROM AppUser WHERE id = ?")) {
                 st.setObject(1, id);
                 int affected = st.executeUpdate();
@@ -278,8 +278,8 @@ public class Api {
                 bindings.removeFirst();
             }
             st.setObject(i++, targetId);
-            int updatedRows = st.executeUpdate();
-            if (updatedRows != 0)
+            int affected = st.executeUpdate();
+            if (affected != 0)
                 return Response.status(404).build();
             String token = createToken(targetId, req.password);
             return Response.ok().entity(new TokenResponse(token)).build();
@@ -289,7 +289,7 @@ public class Api {
     @PUT
     @Path("/user/{id}")
     public Response updateUser(@PathParam("id") UUID id, UserUpdateRequest req) throws SQLException {
-        return withRole(request, ADMIN_ROLE, (conn, rs) -> {
+        return withRole(ADMIN_ROLE, (conn, rs) -> {
             return updateUser(conn, ADMIN_ROLE, rs.getObject("id", UUID.class), id, req);
         });
     }
@@ -297,7 +297,7 @@ public class Api {
     @PUT
     @Path("/user")
     public Response updateMyUser(UserUpdateRequest req) throws SQLException {
-        return withRole(request, "*", (conn, rs) -> {
+        return withRole("*", (conn, rs) -> {
             UUID myId = rs.getObject("id", UUID.class);
             return updateUser(conn, "*", myId, myId, req);
         });
@@ -325,8 +325,8 @@ public class Api {
 
     @POST
     @Path("/course")
-    public Response addCourse(CourseUpdateRequest req) throws SQLException {
-        return withRole(request, INSTRUCTOR_ROLE, (conn, rs) -> {
+    public Response createCourse(CourseUpdateRequest req) throws SQLException {
+        return withRole(INSTRUCTOR_ROLE, (conn, rs) -> {
             if (req.name.equals(null) || req.description == null || req.startDate == null || req.endDate == null
                     || req.category == null || req.capacity == null)
                 return Response.status(400).build();
@@ -363,7 +363,7 @@ public class Api {
     @DELETE
     @Path("/course/{id}")
     public Response deleteCourse(@PathParam("id") UUID id) throws SQLException {
-        return withRole(request, new String[] { ADMIN_ROLE, INSTRUCTOR_ROLE }, (conn, rs) -> {
+        return withRole(new String[] { ADMIN_ROLE, INSTRUCTOR_ROLE }, (conn, rs) -> {
             boolean isInstructor = rs.getString("role").equals(INSTRUCTOR_ROLE);
             StringBuilder query = new StringBuilder();
             query.append("DELETE FROM Course WHERE id = ? ");
@@ -384,7 +384,7 @@ public class Api {
     @PUT
     @Path("/course/{id}")
     public Response updateCourse(@PathParam("id") UUID id, CourseUpdateRequest req) throws SQLException {
-        return withRole(request, new String[] { ADMIN_ROLE, INSTRUCTOR_ROLE }, (conn, rs) -> {
+        return withRole(new String[] { ADMIN_ROLE, INSTRUCTOR_ROLE }, (conn, rs) -> {
             if (req == null) {
                 return Response.status(400).build();
             }
@@ -449,8 +449,40 @@ public class Api {
                 st.setObject(i++, id);
                 if (isInstructor)
                     st.setObject(i++, rs.getObject("id"));
-                int updatedRows = st.executeUpdate();
-                if (updatedRows != 0)
+                int affected = st.executeUpdate();
+                if (affected != 0)
+                    return Response.status(404).build();
+                return Response.ok().build();
+            }
+        });
+    }
+
+    @POST
+    @Path("/course/{courseId}/review")
+    public Response createReview(@PathParam("courseId") UUID courseId, ReviewCreateRequest req) throws SQLException {
+        return withRole(STUDENT_ROLE, (conn, accountRs) -> {
+            if (req.body == null)
+                req.body = "";
+            if (req.stars == null)
+                return Response.status(400).build();
+            UUID studentId = accountRs.getObject("id", UUID.class);
+            try (PreparedStatement st = conn
+                    .prepareStatement("SELECT id FROM Review WHERE studentId = ? AND courseId = ?")) {
+                st.setObject(1, studentId);
+                st.setObject(2, courseId);
+                if (st.executeQuery().next())
+                    return Response.status(400).entity(new MessageResponse("You already have a review on this course"))
+                            .build();
+            }
+            try (PreparedStatement st = conn
+                    .prepareStatement("INSERT INTO Review (studentId, courseId, stars, body) VALUES (?, ?, ?, ?)")) {
+                int i = 1;
+                st.setObject(i++, studentId);
+                st.setObject(i++, courseId);
+                st.setObject(i++, req.stars);
+                st.setObject(i++, req.body);
+                int affected = st.executeUpdate();
+                if (affected == 0)
                     return Response.status(404).build();
                 return Response.ok().build();
             }

@@ -26,3 +26,12 @@ CREATE TABLE Course (
     category VARCHAR(255) NOT NULL,
     capacity INTEGER NOT NULL
 );
+
+CREATE TABLE Review (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    studentId UUID NOT NULL REFERENCES AppUser (id) ON DELETE CASCADE,
+    courseId UUID NOT NULL REFERENCES Course (id) ON DELETE CASCADE,
+    stars int NOT NULL,
+    body TEXT NOT NULL,
+    UNIQUE (studentId, courseId)
+);

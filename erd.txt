@@ -22,7 +22,7 @@
   - userId
   - courseId
   - stars
-  - description
+  - body
 
 - Enrollment
   - id

@@ -19,6 +19,7 @@
   - Upload/delete course material
   - View courses and their information (my courses and all courses)
   - Search courses (my courses and all courses) (by name, category)
+  - Sort courses
   - Accept/reject student enrollment
 
 - Students
@@ -29,6 +30,7 @@
     - Real time notifications?
   - View courses and their information
   - Search courses (by name, category)
+  - Sort courses
   - Create course enrollment
   - Cancel course enrollment
   - View notifications (course enrollment updates)
@@ -42,8 +44,11 @@
   - Don't cast to text when comparing UUID
   - Document that course startDate and endDate are in epoch seconds
 
+- Assumptions
+  - Instructors can create courses without approvals
+  - Instructors need approval to add course content
+
 - TODO
-  - Add course
-    - Inputs name, description, startDate, endDate, category, capacity
-  - Remove course
-  - Edit course
+  - Create reviews (make sure only one review per course)
+  - View courses
+  - Add, remove, approve, reject, edit (if string) course content
