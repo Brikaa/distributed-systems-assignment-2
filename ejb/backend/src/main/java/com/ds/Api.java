@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedList;
@@ -41,8 +42,7 @@ public class Api {
     private final String STUDENT_ROLE = "STUDENT";
     private final Pattern EMAIL_REGEX = Pattern.compile("^[a-zA-Z0-9_!#$%&’*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$");
 
-    private Response withRole(HttpServletRequest request, String role, Callback callback)
-            throws SQLException {
+    private Response withRole(HttpServletRequest request, String[] roles, Callback callback) throws SQLException {
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null) {
             return Response.status(401).build();
@@ -72,11 +72,27 @@ public class Api {
             if (!rs.next()) {
                 return Response.status(401).build();
             }
-            if (role != "*" && !rs.getString("role").equalsIgnoreCase(role)) {
-                return Response.status(403).build();
+            if (roles.length != 0) {
+                boolean found = false;
+                String myRole = rs.getString("role");
+                for (String role : roles) {
+                    if (role.equalsIgnoreCase(myRole)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                    return Response.status(403).build();
             }
             return callback.apply(conn, rs);
         }
+    }
+
+    private Response withRole(HttpServletRequest request, String role, Callback callback) throws SQLException {
+        if (role.equals("*"))
+            return withRole(request, new String[] {}, callback);
+        else
+            return withRole(request, new String[] { role }, callback);
     }
 
     @GET
@@ -189,7 +205,9 @@ public class Api {
         return withRole(request, ADMIN_ROLE, (conn, _rs) -> {
             try (PreparedStatement st = conn.prepareStatement("DELETE FROM AppUser WHERE id = ?")) {
                 st.setObject(1, id);
-                st.executeUpdate();
+                int affected = st.executeUpdate();
+                if (affected == 0)
+                    return Response.status(404).build();
                 return Response.ok().build();
             }
         });
@@ -247,9 +265,8 @@ public class Api {
             bindings.addLast((i, st) -> st.setString(i, req.bio));
         }
 
-        if (updates.size() == 0) {
+        if (updates.size() == 0)
             return Response.status(400).build();
-        }
 
         query.append(String.join(",", updates));
         query.append(" WHERE id = ?");
@@ -308,7 +325,7 @@ public class Api {
 
     @POST
     @Path("/course")
-    public Response addCourse(CourseAddRequest req) throws SQLException {
+    public Response addCourse(CourseUpdateRequest req) throws SQLException {
         return withRole(request, INSTRUCTOR_ROLE, (conn, rs) -> {
             if (req.name.equals(null) || req.description == null || req.startDate == null || req.endDate == null
                     || req.category == null || req.capacity == null)
@@ -340,6 +357,103 @@ public class Api {
             }
 
             return Response.ok().build();
+        });
+    }
+
+    @DELETE
+    @Path("/course/{id}")
+    public Response deleteCourse(@PathParam("id") UUID id) throws SQLException {
+        return withRole(request, new String[] { ADMIN_ROLE, INSTRUCTOR_ROLE }, (conn, rs) -> {
+            boolean isInstructor = rs.getString("role").equals(INSTRUCTOR_ROLE);
+            StringBuilder query = new StringBuilder();
+            query.append("DELETE FROM Course WHERE id = ? ");
+            if (isInstructor)
+                query.append("AND instructorId = ?");
+            try (PreparedStatement st = conn.prepareStatement(query.toString())) {
+                st.setObject(1, id);
+                if (isInstructor)
+                    st.setObject(2, rs.getObject("id", UUID.class));
+                int affected = st.executeUpdate();
+                if (affected == 0)
+                    return Response.status(404).build();
+                return Response.ok().build();
+            }
+        });
+    }
+
+    @PUT
+    @Path("/course/{id}")
+    public Response updateCourse(@PathParam("id") UUID id, CourseUpdateRequest req) throws SQLException {
+        return withRole(request, new String[] { ADMIN_ROLE, INSTRUCTOR_ROLE }, (conn, rs) -> {
+            if (req == null) {
+                return Response.status(400).build();
+            }
+
+            StringBuilder query = new StringBuilder();
+            query.append("UPDATE Course SET ");
+            ArrayList<String> updates = new ArrayList<>();
+            LinkedList<Binding> bindings = new LinkedList<>();
+            String err = null;
+
+            if (req.name != null) {
+                if ((err = getInvalidCourseNameError(req.name)) != null)
+                    return Response.status(400).entity(new MessageResponse(err)).build();
+                updates.add("name = ?");
+                bindings.addLast((i, st) -> st.setString(i, req.name));
+            }
+
+            if (req.description != null) {
+                updates.add("description = ?");
+                bindings.addLast((i, st) -> st.setString(i, req.description));
+            }
+
+            if (req.startDate != null && req.endDate != null) {
+                if ((err = getInvalidCourseDatesError(req.startDate, req.endDate)) != null)
+                    return Response.status(400).entity(new MessageResponse(err)).build();
+                updates.add("startDate = ?");
+                updates.add("endDate = ?");
+                bindings.addLast((i, st) -> st.setTimestamp(i, new Timestamp(req.startDate)));
+                bindings.addLast((i, st) -> st.setTimestamp(i, new Timestamp(req.endDate)));
+            }
+
+            if (req.category != null) {
+                if ((err = getInvalidCategoryError(req.category)) != null)
+                    return Response.status(400).entity(new MessageResponse(err)).build();
+                updates.add("category = ?");
+                bindings.addLast((i, st) -> st.setString(i, req.category));
+            }
+
+            if (req.capacity != null) {
+                if ((err = getInvalidCapacityError(req.capacity)) != null)
+                    return Response.status(400).entity(new MessageResponse(err)).build();
+                updates.add("capacity = ?");
+                bindings.addLast((i, st) -> st.setInt(i, req.capacity));
+            }
+
+            if (updates.size() == 0)
+                return Response.status(400).build();
+
+            query.append(String.join(",", updates));
+            query.append(" WHERE id = ?");
+
+            boolean isInstructor = rs.getString("role").equals(INSTRUCTOR_ROLE);
+            if (isInstructor)
+                query.append(" AND instructorId = ?");
+
+            try (PreparedStatement st = conn.prepareStatement(query.toString())) {
+                int i = 1;
+                while (!bindings.isEmpty()) {
+                    bindings.getFirst().apply(i++, st);
+                    bindings.removeFirst();
+                }
+                st.setObject(i++, id);
+                if (isInstructor)
+                    st.setObject(i++, rs.getObject("id"));
+                int updatedRows = st.executeUpdate();
+                if (updatedRows != 0)
+                    return Response.status(404).build();
+                return Response.ok().build();
+            }
         });
     }
 }

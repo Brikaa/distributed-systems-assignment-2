@@ -1,6 +1,6 @@
 package com.ds.requests;
 
-public class CourseAddRequest {
+public class CourseUpdateRequest {
     public String name;
     public String description;
     public Long startDate;
