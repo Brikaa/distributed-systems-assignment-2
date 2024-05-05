@@ -23,6 +23,7 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -213,6 +214,15 @@ public class Api {
         });
     }
 
+    private int applyBindings(PreparedStatement st, LinkedList<Binding> bindings) throws SQLException {
+        int i = 1;
+        while (!bindings.isEmpty()) {
+            bindings.getFirst().apply(i++, st);
+            bindings.removeFirst();
+        }
+        return i;
+    }
+
     private Response updateUser(Connection conn, String role, UUID sourceId, UUID targetId, UserUpdateRequest req)
             throws SQLException {
         if (req == null) {
@@ -272,11 +282,7 @@ public class Api {
         query.append(" WHERE id = ?");
 
         try (PreparedStatement st = conn.prepareStatement(query.toString())) {
-            int i = 1;
-            while (!bindings.isEmpty()) {
-                bindings.getFirst().apply(i++, st);
-                bindings.removeFirst();
-            }
+            int i = applyBindings(st, bindings);
             st.setObject(i++, targetId);
             int affected = st.executeUpdate();
             if (affected != 0)
@@ -441,11 +447,7 @@ public class Api {
                 query.append(" AND instructorId = ?");
 
             try (PreparedStatement st = conn.prepareStatement(query.toString())) {
-                int i = 1;
-                while (!bindings.isEmpty()) {
-                    bindings.getFirst().apply(i++, st);
-                    bindings.removeFirst();
-                }
+                int i = applyBindings(st, bindings);
                 st.setObject(i++, id);
                 if (isInstructor)
                     st.setObject(i++, rs.getObject("id"));
@@ -488,6 +490,76 @@ public class Api {
             }
         });
     }
+
+    private String escapeLikeString(String likeString) {
+        return likeString.replace("!", "!!").replace("%", "!%").replace("_", "!_").replace("[", "![");
+    }
+
+    @GET
+    @Path("/course/")
+    public Response listCourses(@QueryParam("sortBy") String sortBy, @QueryParam("name") String name,
+            @QueryParam("category") String category, @QueryParam("mine") Boolean mine) throws SQLException {
+        return withRole("*", (conn, accountRs) -> {
+            StringBuilder query = new StringBuilder();
+            query.append("""
+                    SELECT
+                        Course.id AS courseId,
+                        Course.name AS courseName,
+                        MIN(Instructor.name) AS instructorName,
+                        AVG(Review.stars) AS averageStars,
+                        COUNT(Review.id) AS numberOfReviews,
+                        Course.category,
+                        Course.startDate,
+                        Course.endDate,
+                        Course.capacity
+                    FROM Course
+                        LEFT JOIN AppUser AS Instructor ON Instructor.id = Course.instructorId
+                        LEFT JOIN Review ON Review.courseId = Course.id""");
+            ArrayList<String> where = new ArrayList<>();
+            LinkedList<Binding> bindings = new LinkedList<>();
+            if (name != null) {
+                where.add("LOWER(Course.name) LIKE LOWER(?)");
+                bindings.addLast((i, st) -> st.setString(i, escapeLikeString(name)));
+            }
+            if (category != null) {
+                where.add("LOWER(Course.category) LIKE LOWER(?)");
+                bindings.addLast((i, st) -> st.setString(i, escapeLikeString(category)));
+            }
+            if (accountRs.getString("role").equals(INSTRUCTOR_ROLE) && mine != null) {
+                where.add("Instructor.id = ?");
+                bindings.addLast((i, st) -> st.setObject(i, accountRs.getString("id")));
+            }
+
+            if (where.size() > 0)
+                query.append(" WHERE " + String.join(" AND ", where));
+
+            query.append(" GROUP BY Course.id");
+
+            if (sortBy != null && sortBy.equals("stars"))
+                query.append(" ORDER BY averageStars DESC");
+
+            try (PreparedStatement st = conn.prepareStatement(query.toString())) {
+                applyBindings(st, bindings);
+                ResultSet rs = st.executeQuery();
+                ArrayList<CourseResponse> courses = new ArrayList<>();
+                while (rs.next()) {
+                    courses.add(new CourseResponse() {
+                        {
+                            name = rs.getString("courseName");
+                            instructorName = rs.getString("instructorName");
+                            averageStars = rs.getInt("averageStars");
+                            numberOfReviews = rs.getInt("numberOfReviews");
+                            category = rs.getString("category");
+                            startDate = rs.getLong("startDate");
+                            endDate = rs.getLong("endDate");
+                            capacity = rs.getInt("capacity");
+                        }
+                    });
+                }
+                return Response.ok().entity(new CoursesResponse(courses)).build();
+            }
+        });
+    }
 }
 
 class UserResponse {
@@ -497,6 +569,25 @@ class UserResponse {
     public String role;
     public Integer experience;
     public String bio;
+}
+
+class CourseResponse {
+    public String name;
+    public String instructorName;
+    public Integer averageStars;
+    public Integer numberOfReviews;
+    public String category;
+    public Long startDate;
+    public Long endDate;
+    public Integer capacity;
+}
+
+class CoursesResponse {
+    public ArrayList<CourseResponse> courses;
+
+    public CoursesResponse(ArrayList<CourseResponse> courses) {
+        this.courses = courses;
+    }
 }
 
 class MessageResponse {

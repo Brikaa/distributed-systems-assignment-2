@@ -3,6 +3,8 @@
     - Edit users info, suspend users?
   - Accept/reject new course content
     - What is course content?
+  - View courses, sort by ratings, search (by name, category)
+  - View detailed course
   - Remove courses
   - Edit course details, add/remove content to it
   - Track platform usage (number of registered students, number of registered instructors)
@@ -16,21 +18,19 @@
   - View user info
   - Update user info (change password, experience, bio)
   - Create a course
+  - View courses, sort by ratings, search (by name, category) (my courses and all courses)
+  - View detailed course
   - Upload/delete course material
-  - View courses and their information (my courses and all courses)
-  - Search courses (my courses and all courses) (by name, category)
-  - Sort courses
   - Accept/reject student enrollment
 
 - Students
   - Register, log in
   - View user info
   - Update user info (change password, bio)
+  - View courses, sort by ratings, search (by name, category)
+  - View detailed course
   - View current (accepted) and past enrollments (finished, rejected)
     - Real time notifications?
-  - View courses and their information
-  - Search courses (by name, category)
-  - Sort courses
   - Create course enrollment
   - Cancel course enrollment
   - View notifications (course enrollment updates)
@@ -49,6 +49,20 @@
   - Instructors need approval to add course content
 
 - TODO
-  - Create reviews (make sure only one review per course)
   - View courses
   - Add, remove, approve, reject, edit (if string) course content
+
+- General courses view
+  - Name
+  - Instructor name
+  - Average stars
+  - Number of reviews
+  - Category
+  - Start date
+  - End date
+  - Capacity
+
+  - Sortable by average number of stars
+  - Searchable by name
+  - Searchable by category
+  - Filterable by mine (if instructor)
