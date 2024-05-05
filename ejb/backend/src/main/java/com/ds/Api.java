@@ -261,7 +261,9 @@ public class Api {
                 bindings.removeFirst();
             }
             st.setObject(i++, targetId);
-            st.executeUpdate();
+            int updatedRows = st.executeUpdate();
+            if (updatedRows != 0)
+                return Response.status(404).build();
             String token = createToken(targetId, req.password);
             return Response.ok().entity(new TokenResponse(token)).build();
         }
@@ -271,13 +273,6 @@ public class Api {
     @Path("/user/{id}")
     public Response updateUser(@PathParam("id") UUID id, UserUpdateRequest req) throws SQLException {
         return withRole(request, ADMIN_ROLE, (conn, rs) -> {
-            try (PreparedStatement st = conn.prepareStatement("SELECT id FROM AppUser WHERE id = ?")) {
-                st.setObject(1, id);
-                ResultSet foundRs = st.executeQuery();
-                if (!foundRs.next()) {
-                    return Response.status(404).build();
-                }
-            }
             return updateUser(conn, ADMIN_ROLE, rs.getObject("id", UUID.class), id, req);
         });
     }
