@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import com.ds.requests.*;
 
@@ -37,6 +38,8 @@ public class Api {
 
     private final String ADMIN_ROLE = "ADMIN";
     private final String INSTRUCTOR_ROLE = "INSTRUCTOR";
+    private final String STUDENT_ROLE = "STUDENT";
+    private final Pattern EMAIL_REGEX = Pattern.compile("^[a-zA-Z0-9_!#$%&’*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$");
 
     private Response withRole(HttpServletRequest request, String role, Callback callback)
             throws SQLException {
@@ -106,6 +109,62 @@ public class Api {
         }
     }
 
+    private String getInvalidNameError(String name) {
+        return name.isEmpty() ? "Name can't be empty" : null;
+    }
+
+    private String getInvalidEmailError(String email) {
+        return !EMAIL_REGEX.matcher(email).matches() ? "Invalid email" : null;
+    }
+
+    private String getInvalidPasswordError(String password) {
+        return password.length() < 8 ? "Password must be at least 8 characters long" : null;
+    }
+
+    private String getInvalidExperienceError(int experience) {
+        return (experience > 100 || experience < 0) ? "Invalid years of experience" : null;
+    }
+
+    @POST
+    @Path("/register")
+    public Response register(UserUpdateRequest req) throws SQLException {
+        if (req.name == null || req.email == null || req.password == null || req.role == null || req.experience == null
+                || req.bio == null) {
+            return Response.status(400).build();
+        }
+
+        {
+            String err = null;
+            if ((err = getInvalidNameError(req.name)) != null)
+                return Response.status(400).entity(new MessageResponse(err)).build();
+            if ((err = getInvalidEmailError(req.email)) != null)
+                return Response.status(400).entity(new MessageResponse(err)).build();
+            if ((err = getInvalidPasswordError(req.password)) != null)
+                return Response.status(400).entity(new MessageResponse(err)).build();
+            if (!req.role.equals(INSTRUCTOR_ROLE) || !req.role.equals(STUDENT_ROLE))
+                return Response.status(400).entity(new MessageResponse("Invalid role")).build();
+            if (req.role.equals(INSTRUCTOR_ROLE) && (err = getInvalidExperienceError(req.experience)) != null)
+                return Response.status(400).entity(new MessageResponse(err)).build();
+        }
+
+        try (Connection conn = dataSource.getInstance().getConnection();
+                PreparedStatement st = conn.prepareStatement(
+                        "INSERT INTO AppUser (name, email, password, role, experience, bio) VALUES (?, ?, ?, ?, ?, ?)")) {
+            int i = 1;
+            st.setString(i++, req.name);
+            st.setString(i++, req.email);
+            st.setString(i++, req.password);
+            st.setString(i++, req.role);
+            if (req.role.equals(INSTRUCTOR_ROLE))
+                st.setInt(i++, req.experience);
+            else
+                st.setInt(i++, 0);
+            st.setString(i++, req.bio);
+            st.executeUpdate();
+        }
+        return Response.ok().build();
+    }
+
     @GET
     @Path("/user")
     public Response getUser() throws SQLException {
@@ -145,26 +204,44 @@ public class Api {
         query.append("UPDATE AppUser SET ");
         ArrayList<String> updates = new ArrayList<>();
         LinkedList<Binding> bindings = new LinkedList<>();
+        String err = null;
+
         if (req.name != null) {
+            if ((err = getInvalidNameError(req.name)) != null)
+                return Response.status(400).entity(new MessageResponse(err)).build();
             updates.add("name = ?");
             bindings.addLast((i, st) -> st.setString(i, req.name));
         }
+
         if (req.email != null) {
+            if ((err = getInvalidEmailError(req.email)) != null)
+                return Response.status(400).entity(new MessageResponse(err)).build();
             updates.add("email = ?");
             bindings.addLast((i, st) -> st.setString(i, req.email));
         }
+
         if (req.password != null) {
+            if ((err = getInvalidPasswordError(req.password)) != null)
+                return Response.status(400).entity(new MessageResponse(err)).build();
             updates.add("password = ?");
             bindings.addLast((i, st) -> st.setString(i, req.password));
         }
+
         if (role.equals(ADMIN_ROLE) && sourceId != targetId && req.role != null) {
+            if (!req.role.equals(INSTRUCTOR_ROLE) || !req.role.equals(STUDENT_ROLE) || !req.role.equals(ADMIN_ROLE))
+                return Response.status(400).entity(new MessageResponse("Invalid role")).build();
             updates.add("role = ?");
             bindings.addLast((i, st) -> st.setString(i, req.role));
         }
+
+        // FIXME: admin can set student experience
         if ((role.equals(ADMIN_ROLE) || role.equals(INSTRUCTOR_ROLE)) && req.experience != null) {
+            if ((err = getInvalidExperienceError(req.experience)) != null)
+                return Response.status(400).entity(new MessageResponse(err)).build();
             updates.add("experience = ?");
             bindings.addLast((i, st) -> st.setInt(i, req.experience));
         }
+
         if (req.bio != null) {
             updates.add("bio = ?");
             bindings.addLast((i, st) -> st.setString(i, req.bio));
