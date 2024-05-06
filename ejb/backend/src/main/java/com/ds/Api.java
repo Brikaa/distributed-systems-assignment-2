@@ -608,6 +608,24 @@ public class Api {
             }
         });
     }
+
+    @PUT
+    @Path("/notification/{id}")
+    public Response updateNotification(@PathParam("id") UUID id, NotificationUpdateRequest req) throws SQLException {
+        return withRole("*", (conn, accountRs) -> {
+            if (req.isRead == null)
+                return Response.status(400).build();
+            try (PreparedStatement st = conn.prepareStatement("UPDATE Notification SET isRead = "
+                    + (req.isRead ? "true" : "false") + " WHERE id = ? AND userId = ?")) {
+                st.setObject(1, id);
+                st.setObject(2, accountRs.getObject("id", UUID.class));
+                int affected = st.executeUpdate();
+                if (affected == 0)
+                    return Response.status(404).build();
+                return Response.status(200).build();
+            }
+        });
+    }
 }
 
 class UserResponse {
