@@ -247,8 +247,7 @@ public class Api {
         if (req == null) {
             return Response.status(400).build();
         }
-        StringBuilder query = new StringBuilder();
-        query.append("UPDATE AppUser SET ");
+        StringBuilder query = new StringBuilder("UPDATE AppUser SET ");
         ArrayList<String> updates = new ArrayList<>();
         LinkedList<Binding> bindings = new LinkedList<>();
         String err = null;
@@ -390,8 +389,7 @@ public class Api {
     public Response deleteCourse(@PathParam("id") UUID id) throws SQLException {
         return withRole(new String[] { ADMIN_ROLE, INSTRUCTOR_ROLE }, (conn, rs) -> {
             boolean isInstructor = rs.getString("role").equals(INSTRUCTOR_ROLE);
-            StringBuilder query = new StringBuilder();
-            query.append("DELETE FROM Course WHERE id = ? ");
+            StringBuilder query = new StringBuilder("DELETE FROM Course WHERE id = ? ");
             if (isInstructor)
                 query.append("AND instructorId = ?");
             try (PreparedStatement st = conn.prepareStatement(query.toString())) {
@@ -414,8 +412,7 @@ public class Api {
                 return Response.status(400).build();
             }
 
-            StringBuilder query = new StringBuilder();
-            query.append("UPDATE Course SET ");
+            StringBuilder query = new StringBuilder("UPDATE Course SET ");
             ArrayList<String> updates = new ArrayList<>();
             LinkedList<Binding> bindings = new LinkedList<>();
             String err = null;
@@ -521,12 +518,12 @@ public class Api {
     public Response listCourses(@QueryParam("sortBy") String sortBy, @QueryParam("name") String name,
             @QueryParam("category") String category, @QueryParam("mine") Boolean mine) throws SQLException {
         return withRole("*", (conn, accountRs) -> {
-            StringBuilder query = new StringBuilder();
-            query.append("""
+            StringBuilder query = new StringBuilder("""
                     SELECT
                         Course.id AS courseId,
                         Course.name AS courseName,
-                        MIN(Instructor.name) AS instructorName,
+                        Instructor.id AS instructorId,
+                        Instructor.name AS instructorName,
                         AVG(Review.stars) AS averageStars,
                         COUNT(Review.id) AS numberOfReviews,
                         Course.category,
@@ -554,7 +551,7 @@ public class Api {
             if (where.size() > 0)
                 query.append(" WHERE " + String.join(" AND ", where));
 
-            query.append(" GROUP BY Course.id");
+            query.append(" GROUP BY Course.id, Instructor.id");
 
             if (sortBy != null && sortBy.equals("stars"))
                 query.append(" ORDER BY averageStars DESC");
@@ -566,7 +563,9 @@ public class Api {
                 while (rs.next()) {
                     courses.add(new CourseResponse() {
                         {
+                            id = rs.getObject("courseId", UUID.class);
                             name = rs.getString("courseName");
+                            instructorId = rs.getObject("instructorId", UUID.class);
                             instructorName = rs.getString("instructorName");
                             averageStars = rs.getInt("averageStars");
                             averageStars = averageStars == null ? 0 : averageStars;
@@ -582,6 +581,33 @@ public class Api {
             }
         });
     }
+
+    @GET
+    @Path("/notification")
+    public Response listNotifications(@QueryParam("read") Boolean isRead) throws SQLException {
+        return withRole("*", (conn, accountRs) -> {
+            StringBuilder query = new StringBuilder(
+                    "SELECT id, title, body, isRead FROM Notification WHERE userId = ?");
+            if (isRead != null)
+                query.append(" AND isRead = " + (isRead ? "true" : "false"));
+            try (PreparedStatement st = conn.prepareStatement(query.toString())) {
+                st.setObject(1, UUID.class);
+                ResultSet rs = st.executeQuery();
+                ArrayList<NotificationResponse> notifications = new ArrayList<>();
+                while (rs.next()) {
+                    notifications.add(new NotificationResponse() {
+                        {
+                            id = rs.getObject("id", UUID.class);
+                            title = rs.getString("title");
+                            body = rs.getString("body");
+                            isRead = rs.getBoolean("isRead");
+                        }
+                    });
+                }
+                return Response.status(200).entity(new NotificationsResponse(notifications)).build();
+            }
+        });
+    }
 }
 
 class UserResponse {
@@ -594,7 +620,9 @@ class UserResponse {
 }
 
 class CourseResponse {
+    public UUID id;
     public String name;
+    public UUID instructorId;
     public String instructorName;
     public Integer averageStars;
     public Integer numberOfReviews;
@@ -609,6 +637,21 @@ class CoursesResponse {
 
     public CoursesResponse(ArrayList<CourseResponse> courses) {
         this.courses = courses;
+    }
+}
+
+class NotificationResponse {
+    public UUID id;
+    public String title;
+    public String body;
+    public Boolean isRead;
+}
+
+class NotificationsResponse {
+    public ArrayList<NotificationResponse> notifications;
+
+    public NotificationsResponse(ArrayList<NotificationResponse> notifications) {
+        this.notifications = notifications;
     }
 }
 

@@ -49,12 +49,15 @@
   - Instructors need approval to add course content
 
 - TODO
-  - Track platform usage
   - Create enrollment
   - Cancel enrollment
-  - Accept/reject enrollment
+  - Accept/reject enrollment (and notify student)
+  - View course enrollments (instructor)
+  - View my enrollments (student) (filterable by current/past)
   - Read notifications
+  - Show number of enrollments in list courses
   - Don't review unless you were enrolled
+  - Track platform usage
   - View course details
   - Add, remove, approve, reject, edit (if string) course content
 

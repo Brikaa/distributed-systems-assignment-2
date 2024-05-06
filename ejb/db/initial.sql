@@ -35,3 +35,11 @@ CREATE TABLE Review (
     body TEXT NOT NULL,
     UNIQUE (studentId, courseId)
 );
+
+CREATE TABLE Notification (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    userId UUID NOT NULL REFERENCES AppUser (id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    body VARCHAR(1024) NOT NULL,
+    isRead BOOLEAN NOT NULL
+);
