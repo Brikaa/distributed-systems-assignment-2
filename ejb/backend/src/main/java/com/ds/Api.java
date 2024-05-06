@@ -182,21 +182,40 @@ public class Api {
         return Response.ok().build();
     }
 
+    private UserResponse getUserResponse(ResultSet rs) throws SQLException {
+        return new UserResponse() {
+            {
+                id = rs.getObject("id", UUID.class);
+                name = rs.getString("name");
+                email = rs.getString("email");
+                role = rs.getString("role");
+                if (role.equals(INSTRUCTOR_ROLE))
+                    experience = rs.getInt("experience");
+                bio = rs.getString("bio");
+            }
+        };
+    }
+
     @GET
     @Path("/user")
-    public Response getUser() throws SQLException {
+    public Response getMyUser() throws SQLException {
         return withRole("*", (_conn, rs) -> {
-            return Response.ok().entity(new UserResponse() {
-                {
-                    id = rs.getObject("id", UUID.class);
-                    name = rs.getString("name");
-                    email = rs.getString("email");
-                    role = rs.getString("role");
-                    if (role.equals(INSTRUCTOR_ROLE))
-                        experience = rs.getInt("experience");
-                    bio = rs.getString("bio");
-                }
-            }).build();
+            return Response.ok().entity(getUserResponse(rs)).build();
+        });
+    }
+
+    @GET
+    @Path("/user/{id}")
+    public Response getUser(@PathParam("id") UUID id) throws SQLException {
+        return withRole(ADMIN_ROLE, (conn, _rs) -> {
+            try (PreparedStatement st = conn
+                    .prepareStatement("SELECT id, name, email, role, experience, bio FROM AppUser WHERE id = ?")) {
+                st.setObject(1, id);
+                ResultSet rs = st.executeQuery();
+                if (!rs.next())
+                    return Response.status(404).build();
+                return Response.status(200).entity(getUserResponse(rs)).build();
+            }
         });
     }
 
