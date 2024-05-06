@@ -467,6 +467,8 @@ public class Api {
                 req.body = "";
             if (req.stars == null)
                 return Response.status(400).build();
+            if (req.stars < 1 || req.stars > 5)
+                return Response.status(400).entity(new MessageResponse("Stars must be between 1 and 5")).build();
             UUID studentId = accountRs.getObject("id", UUID.class);
             try (PreparedStatement st = conn
                     .prepareStatement("SELECT id FROM Review WHERE studentId = ? AND courseId = ?")) {

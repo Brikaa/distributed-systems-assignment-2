@@ -49,6 +49,8 @@
   - Instructors need approval to add course content
 
 - TODO
+  - View other user
+  - Don't review unless you were enrolled
   - View courses
   - Add, remove, approve, reject, edit (if string) course content
 
