@@ -49,9 +49,13 @@
   - Instructors need approval to add course content
 
 - TODO
-  - View other user
+  - Track platform usage
+  - Create enrollment
+  - Cancel enrollment
+  - Accept/reject enrollment
+  - Read notifications
   - Don't review unless you were enrolled
-  - View courses
+  - View course details
   - Add, remove, approve, reject, edit (if string) course content
 
 - General courses view

@@ -569,6 +569,7 @@ public class Api {
                             name = rs.getString("courseName");
                             instructorName = rs.getString("instructorName");
                             averageStars = rs.getInt("averageStars");
+                            averageStars = averageStars == null ? 0 : averageStars;
                             numberOfReviews = rs.getInt("numberOfReviews");
                             category = rs.getString("category");
                             startDate = rs.getLong("startDate");

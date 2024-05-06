@@ -21,8 +21,8 @@ CREATE TABLE Course (
     instructorId UUID NOT NULL REFERENCES AppUser (id) ON DELETE CASCADE,
     name VARCHAR(1024) NOT NULL,
     description TEXT NOT NULL,
-    startDate TIMESTAMP NOT NULL,
-    endDate TIMESTAMP NOT NULL,
+    startDate BIGINT NOT NULL,
+    endDate BIGINT NOT NULL,
     category VARCHAR(255) NOT NULL,
     capacity INTEGER NOT NULL
 );
