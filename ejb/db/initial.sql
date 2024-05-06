@@ -1,5 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TYPE role AS ENUM ('ADMIN', 'STUDENT', 'INSTRUCTOR');
+CREATE TYPE enrollmentStatus AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED');
 
 
 CREATE TABLE AppUser (
@@ -42,4 +43,11 @@ CREATE TABLE Notification (
     title VARCHAR(255) NOT NULL,
     body VARCHAR(1024) NOT NULL,
     isRead BOOLEAN NOT NULL
+);
+
+CREATE TABLE Enrollment (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    studentId UUID NOT NULL REFERENCES AppUser (id) ON DELETE CASCADE,
+    courseId UUID NOT NULL REFERENCES Course (id) ON DELETE CASCADE,
+    status enrollmentStatus NOT NULL
 );

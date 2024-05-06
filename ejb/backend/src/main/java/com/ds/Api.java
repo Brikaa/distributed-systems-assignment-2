@@ -13,8 +13,13 @@ import java.util.regex.Pattern;
 
 import com.ds.requests.*;
 
-import jakarta.ejb.EJB;
+import jakarta.annotation.Resource;
 import jakarta.ejb.Stateless;
+import jakarta.inject.Inject;
+import jakarta.jms.JMSContext;
+import jakarta.jms.JMSDestinationDefinition;
+import jakarta.jms.JMSDestinationDefinitions;
+import jakarta.jms.Queue;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -28,15 +33,23 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+@JMSDestinationDefinitions(value = {
+        @JMSDestinationDefinition(name = "java:/queue/enrollments", interfaceName = "jakarta.jms.Queue") })
 @Path("/")
 @Stateless
 @Produces(MediaType.APPLICATION_JSON)
 public class Api {
-    @EJB
+    @Inject
     private ApiDataSource dataSource;
 
     @Context
-    private HttpServletRequest request;
+    private HttpServletRequest servletRequest;
+
+    @Inject
+    private JMSContext context;
+
+    @Resource(lookup = "java:/queue/enrollments")
+    private Queue queue;
 
     private final String ADMIN_ROLE = "ADMIN";
     private final String INSTRUCTOR_ROLE = "INSTRUCTOR";
@@ -44,7 +57,7 @@ public class Api {
     private final Pattern EMAIL_REGEX = Pattern.compile("^[a-zA-Z0-9_!#$%&’*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$");
 
     private Response withRole(String[] roles, Callback callback) throws SQLException {
-        String authHeader = request.getHeader("Authorization");
+        String authHeader = servletRequest.getHeader("Authorization");
         if (authHeader == null) {
             return Response.status(401).build();
         }
@@ -501,11 +514,18 @@ public class Api {
                 st.setObject(i++, courseId);
                 st.setObject(i++, req.stars);
                 st.setObject(i++, req.body);
-                int affected = st.executeUpdate();
-                if (affected == 0)
-                    return Response.status(404).build();
+                st.executeUpdate();
                 return Response.ok().build();
             }
+        });
+    }
+
+    @POST
+    @Path("/course/{id}/enroll")
+    public Response createEnrollment(@PathParam("id") UUID id) throws SQLException {
+        return withRole(STUDENT_ROLE, (_conn, rs) -> {
+            context.createProducer().send(queue, "CREATE:" + id + ":" + rs.getObject("id", UUID.class));
+            return Response.status(202).build();
         });
     }
 

@@ -13,4 +13,4 @@ COPY . .
 RUN --mount=type=cache,target=/root/.m2 \
     mvn clean package && cp target/elearning.war /opt/wildfly/standalone/deployments
 
-CMD ["/opt/wildfly/bin/standalone.sh", "-b", "0.0.0.0"]
+CMD ["/opt/wildfly/bin/standalone.sh", "-c", "standalone-full.xml", "-b", "0.0.0.0"]
