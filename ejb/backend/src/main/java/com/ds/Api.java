@@ -226,7 +226,8 @@ public class Api {
                 st.setObject(1, id);
                 ResultSet rs = st.executeQuery();
                 if (!rs.next())
-                    return Response.status(404).build();
+                    return Response.status(404).entity(new MessageResponse("Could not find the specified user"))
+                            .build();
                 return Response.status(200).entity(getUserResponse(rs)).build();
             }
         });
@@ -240,7 +241,8 @@ public class Api {
                 st.setObject(1, id);
                 int affected = st.executeUpdate();
                 if (affected == 0)
-                    return Response.status(404).build();
+                    return Response.status(404).entity(new MessageResponse("Could not find the specified user"))
+                            .build();
                 return Response.ok().build();
             }
         });
@@ -317,7 +319,7 @@ public class Api {
             st.setObject(i++, targetId);
             int affected = st.executeUpdate();
             if (affected != 0)
-                return Response.status(404).build();
+                return Response.status(404).entity(new MessageResponse("Could not find the specified user")).build();
             String token = createToken(targetId, req.password);
             return Response.ok().entity(new TokenResponse(token)).build();
         }
@@ -411,7 +413,9 @@ public class Api {
                     st.setObject(2, rs.getObject("id", UUID.class));
                 int affected = st.executeUpdate();
                 if (affected == 0)
-                    return Response.status(404).build();
+                    return Response.status(404).entity(
+                            new MessageResponse("Could not find the specified course in the courses created by you"))
+                            .build();
                 return Response.ok().build();
             }
         });
@@ -482,7 +486,9 @@ public class Api {
                     st.setObject(i++, rs.getObject("id"));
                 int affected = st.executeUpdate();
                 if (affected != 0)
-                    return Response.status(404).build();
+                    return Response.status(404).entity(
+                            new MessageResponse("Could not find the specified course in the courses created by you"))
+                            .build();
                 return Response.ok().build();
             }
         });
@@ -494,10 +500,21 @@ public class Api {
         return withRole(STUDENT_ROLE, (conn, accountRs) -> {
             if (req.body == null)
                 req.body = "";
+
             if (req.stars == null)
                 return Response.status(400).build();
+
             if (req.stars < 1 || req.stars > 5)
                 return Response.status(400).entity(new MessageResponse("Stars must be between 1 and 5")).build();
+
+            try (PreparedStatement st = conn.prepareStatement("SELECT id FROM Course where id = ?")) {
+                st.setObject(1, courseId);
+                ResultSet rs = st.executeQuery();
+                if (!rs.next())
+                    return Response.status(404).entity(new MessageResponse("Could not find the specified course"))
+                            .build();
+            }
+
             UUID studentId = accountRs.getObject("id", UUID.class);
             try (PreparedStatement st = conn
                     .prepareStatement("SELECT id FROM Review WHERE studentId = ? AND courseId = ?")) {
@@ -641,7 +658,8 @@ public class Api {
                 st.setObject(2, accountRs.getObject("id", UUID.class));
                 int affected = st.executeUpdate();
                 if (affected == 0)
-                    return Response.status(404).build();
+                    return Response.status(404).entity(new MessageResponse("Could not find the specified notification"))
+                            .build();
                 return Response.status(200).build();
             }
         });
