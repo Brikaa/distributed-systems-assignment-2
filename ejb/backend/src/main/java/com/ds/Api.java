@@ -239,8 +239,7 @@ public class Api {
         return withRole(ADMIN_ROLE, (conn, _rs) -> {
             try (PreparedStatement st = conn.prepareStatement("DELETE FROM AppUser WHERE id = ?")) {
                 st.setObject(1, id);
-                int affected = st.executeUpdate();
-                if (affected == 0)
+                if (st.executeUpdate() == 0)
                     return Response.status(404).entity(new MessageResponse("Could not find the specified user"))
                             .build();
                 return Response.ok().build();
@@ -317,8 +316,7 @@ public class Api {
         try (PreparedStatement st = conn.prepareStatement(query.toString())) {
             int i = applyBindings(st, bindings);
             st.setObject(i++, targetId);
-            int affected = st.executeUpdate();
-            if (affected != 0)
+            if (st.executeUpdate() != 0)
                 return Response.status(404).entity(new MessageResponse("Could not find the specified user")).build();
             String token = createToken(targetId, req.password);
             return Response.ok().entity(new TokenResponse(token)).build();
@@ -411,8 +409,7 @@ public class Api {
                 st.setObject(1, id);
                 if (isInstructor)
                     st.setObject(2, rs.getObject("id", UUID.class));
-                int affected = st.executeUpdate();
-                if (affected == 0)
+                if (st.executeUpdate() == 0)
                     return Response.status(404).entity(
                             new MessageResponse("Could not find the specified course in the courses created by you"))
                             .build();
@@ -484,8 +481,7 @@ public class Api {
                 st.setObject(i++, id);
                 if (isInstructor)
                     st.setObject(i++, rs.getObject("id"));
-                int affected = st.executeUpdate();
-                if (affected != 0)
+                if (st.executeUpdate() != 0)
                     return Response.status(404).entity(
                             new MessageResponse("Could not find the specified course in the courses created by you"))
                             .build();
@@ -656,8 +652,7 @@ public class Api {
                     + (req.isRead ? "true" : "false") + " WHERE id = ? AND userId = ?")) {
                 st.setObject(1, id);
                 st.setObject(2, accountRs.getObject("id", UUID.class));
-                int affected = st.executeUpdate();
-                if (affected == 0)
+                if (st.executeUpdate() == 0)
                     return Response.status(404).entity(new MessageResponse("Could not find the specified notification"))
                             .build();
                 return Response.status(200).build();

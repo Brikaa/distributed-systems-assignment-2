@@ -41,8 +41,7 @@ public class EnrollmentWorker implements MessageListener {
                         "UPDATE Enrollment SET status = ? WHERE id = ?")) {
             st.setString(1, status);
             st.setString(2, enrollmentId);
-            int affected = st.executeUpdate();
-            if (affected == 0)
+            if (st.executeUpdate() == 0)
                 System.err.println("Could not find an enrollment with id: " + enrollmentId);
         }
     }
@@ -52,8 +51,7 @@ public class EnrollmentWorker implements MessageListener {
                 PreparedStatement st = conn.prepareStatement(
                         "DELETE FROM Enrollment WHERE id = ?")) {
             st.setString(1, enrollmentId);
-            int affected = st.executeUpdate();
-            if (affected == 0)
+            if (st.executeUpdate() == 0)
                 System.err.println("Could not find an enrollment with id: " + enrollmentId);
         }
 
