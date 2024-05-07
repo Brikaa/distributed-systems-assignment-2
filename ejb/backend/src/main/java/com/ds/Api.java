@@ -708,9 +708,9 @@ public class Api {
                         Enrollment.courseId = ?""")) {
                 st.setObject(1, id);
                 ResultSet rs = st.executeQuery();
-                ArrayList<EnrollmentResponse> enrollments = new ArrayList<>();
+                ArrayList<InstructorEnrollmentResponse> enrollments = new ArrayList<>();
                 while (rs.next()) {
-                    enrollments.add(new EnrollmentResponse() {
+                    enrollments.add(new InstructorEnrollmentResponse() {
                         {
                             id = rs.getObject("id", UUID.class);
                             studentId = rs.getObject("studentId", UUID.class);
@@ -719,7 +719,49 @@ public class Api {
                         }
                     });
                 }
-                return Response.status(200).entity(new EnrollmentsResponse(enrollments)).build();
+                return Response.status(200).entity(new InstructorEnrollmentsResponse(enrollments)).build();
+            }
+        });
+    }
+
+    @GET
+    @Path("/enrollment")
+    public Response listStudentEnrollments(@QueryParam("isPast") Boolean isPast) throws SQLException {
+        return withRole(STUDENT_ROLE, (conn, accountRs) -> {
+            String dateFilter = "";
+            if (isPast != null) {
+                long currentDate = System.currentTimeMillis() / 1000L;
+                dateFilter = isPast ? " AND Course.endDate <= " + currentDate : "AND Course.endDate > " + currentDate;
+            }
+            try (PreparedStatement st = conn.prepareStatement("""
+                    SELECT
+                        Enrollment.id AS id,
+                        Enrollment.courseId AS courseId,
+                        Course.name as courseName,
+                        Course.startDate as courseStartDate,
+                        Course.endDate as courseEndDate,
+                        Enrollment.status as status
+                    FROM
+                        Enrollment
+                        LEFT JOIN Course ON Course.id = Enrollment.courseId
+                    WHERE
+                        Enrollment.studentId = ?""" + dateFilter)) {
+                st.setObject(1, accountRs.getObject("id", UUID.class));
+                ResultSet rs = st.executeQuery();
+                ArrayList<StudentEnrollmentResponse> enrollments = new ArrayList<>();
+                while (rs.next()) {
+                    enrollments.add(new StudentEnrollmentResponse() {
+                        {
+                            id = rs.getObject("id", UUID.class);
+                            courseId = rs.getObject("courseId", UUID.class);
+                            courseName = rs.getString("courseName");
+                            courseStartDate = rs.getLong("courseStartDate");
+                            courseEndDate = rs.getLong("courseEndDate");
+                            status = rs.getString("status");
+                        }
+                    });
+                }
+                return Response.status(200).entity(new StudentEnrollmentsResponse(enrollments)).build();
             }
         });
     }
@@ -770,17 +812,34 @@ class NotificationsResponse {
     }
 }
 
-class EnrollmentResponse {
+class InstructorEnrollmentResponse {
     public UUID id;
     public UUID studentId;
     public String studentName;
     public String status;
 }
 
-class EnrollmentsResponse {
-    public ArrayList<EnrollmentResponse> enrollments;
+class InstructorEnrollmentsResponse {
+    public ArrayList<InstructorEnrollmentResponse> enrollments;
 
-    public EnrollmentsResponse(ArrayList<EnrollmentResponse> enrollments) {
+    public InstructorEnrollmentsResponse(ArrayList<InstructorEnrollmentResponse> enrollments) {
+        this.enrollments = enrollments;
+    }
+}
+
+class StudentEnrollmentResponse {
+    public UUID id;
+    public UUID courseId;
+    public String courseName;
+    public Long courseStartDate;
+    public Long courseEndDate;
+    public String status;
+}
+
+class StudentEnrollmentsResponse {
+    public ArrayList<StudentEnrollmentResponse> enrollments;
+
+    public StudentEnrollmentsResponse(ArrayList<StudentEnrollmentResponse> enrollments) {
         this.enrollments = enrollments;
     }
 }

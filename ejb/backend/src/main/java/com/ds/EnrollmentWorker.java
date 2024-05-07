@@ -57,7 +57,7 @@ public class EnrollmentWorker implements MessageListener {
             else if (rs.getInt("numberOfEnrollments") >= rs.getInt("capacity"))
                 createNotification(conn, studentId,
                         "Can't enroll in '" + rs.getString("name") + "' since it is full");
-            else if (rs.getLong("startDate") < System.currentTimeMillis())
+            else if (rs.getLong("startDate") * 1000 < System.currentTimeMillis())
                 createNotification(conn, studentId,
                         "Can't enroll in '" + rs.getString("name") + "' since it has already started");
             else {
@@ -118,7 +118,7 @@ public class EnrollmentWorker implements MessageListener {
                     createNotification(conn, instructorId,
                             "Can't accept enrollment of id: " + enrollmentId + " since course '"
                                     + courseRs.getString("name") + "' is full.");
-                else if (status.equals("ACCEPTED") && rs.getLong("startDate") < System.currentTimeMillis())
+                else if (status.equals("ACCEPTED") && rs.getLong("startDate") * 1000 < System.currentTimeMillis())
                     createNotification(conn, instructorId,
                             "Can't accept enrollment of id: " + enrollmentId + " since course '"
                                     + courseRs.getString("name") + "' has already started.");
