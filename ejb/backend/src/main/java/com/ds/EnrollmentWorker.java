@@ -143,7 +143,8 @@ public class EnrollmentWorker implements MessageListener {
             st.setString(1, enrollmentId);
             st.setString(2, studentId);
             if (st.executeUpdate() == 0)
-                System.err.println("Could not find an enrollment with id: " + enrollmentId);
+                createNotification(conn, studentId,
+                        "Could not find an enrollment with id: " + enrollmentId + " in your enrollments");
         }
     }
 

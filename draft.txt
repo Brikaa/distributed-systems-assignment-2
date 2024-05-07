@@ -52,54 +52,16 @@
   - Cancelling an enrollment means deleting it
 
 - TODO
-  - Create enrollment
-  - Cancel enrollment
-  - Accept/reject enrollment (and notify student)
-  - View course enrollments (instructor)
-  - View my enrollments (student) (filterable by current/past)
+  - Student create enrollment
+  - Student cancel enrollment
+  - Instructor accept/reject enrollment (and notify student)
+  - Instructor view course enrollments
+  - Student view my enrollments (filterable by current/past)
   - Show number of enrollments in list courses
   - Don't review unless you were enrolled
   - Track platform usage
   - Add, remove, approve, reject, edit (if string) course content
   - View course details
-
-- Enrollment business checks
-  - Student creates enrollment
-    - Invalid course
-      - Send notification to student
-    - Capacity does not suffice
-      - Send notification to student
-    - Course has already started
-      - Send notification to student
-    - Created, pending
-      - Send notification to student
-    - Other error
-
-  - Student cancels enrollment
-
-  - Instructor approves enrollment
-    - Invalid course
-      - Send notification to admin
-    - Invalid status
-      - Handle at endpoint
-    - Not pending
-      - Send notification to admin
-    - Capacity does not suffice
-      - Send notification to admin
-    - Course has already started
-      - Send notification to admin
-    - Accepted
-      - Send notification to student
-    - Other error
-
-  - Instructor rejects enrollment
-    - Invalid course
-      - Send notification to admin
-    - Invalid status
-      - Handle at endpoint
-    - Not pending
-      - Send notification to admin
-    - Other error
 
 - Questions
   - Real-time notifications?

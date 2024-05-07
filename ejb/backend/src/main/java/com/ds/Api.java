@@ -533,15 +533,6 @@ public class Api {
         });
     }
 
-    @POST
-    @Path("/course/{id}/enroll")
-    public Response createEnrollment(@PathParam("id") UUID id) throws SQLException {
-        return withRole(STUDENT_ROLE, (_conn, rs) -> {
-            context.createProducer().send(queue, "CREATE:" + id + ":" + rs.getObject("id", UUID.class));
-            return Response.status(202).build();
-        });
-    }
-
     private String escapeLikeString(String likeString) {
         return likeString.replace("!", "!!").replace("%", "!%").replace("_", "!_").replace("[", "![");
     }
@@ -657,6 +648,36 @@ public class Api {
                             .build();
                 return Response.status(200).build();
             }
+        });
+    }
+
+    @POST
+    @Path("/course/{id}/enroll")
+    public Response createEnrollment(@PathParam("id") UUID id) throws SQLException {
+        return withRole(STUDENT_ROLE, (_conn, rs) -> {
+            context.createProducer().send(queue, "CREATE:" + rs.getObject("id", UUID.class) + ":" + id);
+            return Response.status(202).build();
+        });
+    }
+
+    @DELETE
+    @Path("/enrollment/{id}")
+    public Response deleteEnrollment(@PathParam("id") UUID id) throws SQLException {
+        return withRole(STUDENT_ROLE, (_conn, rs) -> {
+            context.createProducer().send(queue, "DELETE:" + rs.getObject("id", UUID.class) + ":" + id);
+            return Response.status(202).build();
+        });
+    }
+
+    @PUT
+    @Path("/enrollment/{id}")
+    public Response updateEnrollment(@PathParam("id") UUID id, EnrollmentUpdateRequest req) throws SQLException {
+        return withRole(INSTRUCTOR_ROLE, (_conn, rs) -> {
+            if (!req.status.equals("ACCEPTED") || req.status.equals("REJECTED"))
+                return Response.status(400).entity(new MessageResponse("Invalid status")).build();
+            context.createProducer().send(queue,
+                    "UPDATE:" + rs.getObject("id", UUID.class) + ":" + id + ":" + req.status);
+            return Response.status(202).build();
         });
     }
 }
