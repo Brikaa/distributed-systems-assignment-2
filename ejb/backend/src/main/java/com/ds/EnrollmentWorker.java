@@ -45,7 +45,9 @@ public class EnrollmentWorker implements MessageListener {
                         FROM
                             Course
                             LEFT JOIN Enrollment ON Course.id = Enrollment.courseId
-                        WHERE Course.id = ?
+                        WHERE
+                            Course.id = ?
+                            AND Enrollment.status = 'ACCEPTED'
                         GROUP BY Course.id""")) {
             st.setString(1, courseId);
             ResultSet rs = st.executeQuery();
@@ -72,7 +74,6 @@ public class EnrollmentWorker implements MessageListener {
     }
 
     private void updateEnrollment(String instructorId, String enrollmentId, String status) throws SQLException {
-        // TODO: course does not belong to instructor
         if (status.equals("ACCEPTED") || status.equals("REJECTED")) {
             System.err.println("Received invalid status: " + status);
             return;
@@ -89,7 +90,7 @@ public class EnrollmentWorker implements MessageListener {
                 createNotification(conn, instructorId, invalid_enrollment);
                 return;
             }
-            // TODO: abstract with one in createEnrollment
+            // TODO: abstract with query in createEnrollment
             try (PreparedStatement courseSt = conn.prepareStatement("""
                     SELECT
                         Course.id AS id,
@@ -103,6 +104,7 @@ public class EnrollmentWorker implements MessageListener {
                     WHERE
                         Course.id = ?
                         AND Course.instructorId = ?
+                        AND Enrollment.status = 'ACCEPTED'
                     GROUP BY Course.id""")) {
                 courseSt.setString(1, rs.getString("courseId"));
                 courseSt.setString(2, instructorId);
@@ -135,23 +137,28 @@ public class EnrollmentWorker implements MessageListener {
         }
     }
 
-    private void deleteEnrollment(String enrollmentId) throws SQLException {
-        // TODO: course does not belong to instructor
+    private void deleteEnrollment(String studentId, String enrollmentId) throws SQLException {
         try (Connection conn = dataSource.getInstance().getConnection();
-                PreparedStatement st = conn.prepareStatement(
-                        "DELETE FROM Enrollment WHERE id = ?")) {
+                PreparedStatement st = conn.prepareStatement("DELETE FROM Enrollment WHERE id = ? AND studentId = ?")) {
             st.setString(1, enrollmentId);
+            st.setString(2, studentId);
             if (st.executeUpdate() == 0)
                 System.err.println("Could not find an enrollment with id: " + enrollmentId);
         }
+    }
 
+    private boolean isValidMessageBody(String[] body) {
+        String op = body[0];
+        boolean validCreateOrDelete = (op.equals("CREATE") || op.equals("DELETE")) && body.length == 3;
+        boolean validUpdate = op.equals("UPDATE") && body.length == 4;
+        return validCreateOrDelete || validUpdate;
     }
 
     @Override
     public void onMessage(Message rcvMessage) {
         // CREATE:studentId:courseId
-        // UPDATE:enrollmentId:ACCEPTED|REJECTED
-        // DELETE:enrollmentId
+        // UPDATE:instructorId:enrollmentId:ACCEPTED|REJECTED
+        // DELETE:studentId:enrollmentId
         if (!(rcvMessage instanceof TextMessage)) {
             System.err.println("Received invalid message type: " + rcvMessage.getClass().toString());
             return;
@@ -160,24 +167,20 @@ public class EnrollmentWorker implements MessageListener {
         try {
             String txt = msg.getText();
             String[] body = txt.split(":");
-            if (body.length != 3) {
-                System.err.println("Received invalid msg: " + txt);
-                return;
-            }
             String op = body[0];
-            if (op.equals("CREATE"))
+            if (!isValidMessageBody(body))
+                System.err.println("Received invalid msg: " + txt);
+            else if (op.equals("CREATE"))
                 createEnrollment(body[1], body[2]);
             else if (op.equals("UPDATE"))
-                updateEnrollment(body[1], body[1], body[2]);
+                updateEnrollment(body[1], body[2], body[3]);
             else if (op.equals("DELETE"))
-                deleteEnrollment(body[1]);
-            else
-                System.err.println("Received invalid msg: " + txt);
+                deleteEnrollment(body[1], body[2]);
         } catch (JMSException e) {
-            System.err.println("Error handling message");
+            System.err.println("Error handling message:");
             e.printStackTrace();
         } catch (SQLException e) {
-            System.err.println("Error inserting into the database");
+            System.err.println("Error inserting into the database:");
             e.printStackTrace();
         }
     }
