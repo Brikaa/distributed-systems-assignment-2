@@ -47,13 +47,15 @@ public class EnrollmentWorker implements MessageListener {
                             LEFT JOIN Enrollment
                                 ON Course.id = Enrollment.courseId
                                 AND Enrollment.status = 'ACCEPTED'
-                        WHERE Course.id = ?
+                        WHERE
+                            Course.id = ?
+                            AND Course.status = 'ACCEPTED'
                         GROUP BY Course.id""")) {
             st.setString(1, courseId);
             ResultSet rs = st.executeQuery();
             if (!rs.next())
                 createNotification(conn, studentId,
-                        "Can't enroll in course with id: " + courseId + " since it was not found on the system.");
+                        "Can't enroll in course with id: " + courseId + " since it was not found.");
             else if (rs.getInt("numberOfEnrollments") >= rs.getInt("capacity"))
                 createNotification(conn, studentId,
                         "Can't enroll in '" + rs.getString("name") + "' since it is full");
@@ -105,6 +107,7 @@ public class EnrollmentWorker implements MessageListener {
                             AND Enrollment.status = 'ACCEPTED'
                     WHERE
                         Course.id = ?
+                        AND Course.status = 'ACCEPTED'
                         AND Course.instructorId = ?
                     GROUP BY Course.id""")) {
                 courseSt.setString(1, rs.getString("courseId"));

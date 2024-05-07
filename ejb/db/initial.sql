@@ -1,6 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TYPE role AS ENUM ('ADMIN', 'STUDENT', 'INSTRUCTOR');
 CREATE TYPE enrollmentStatus AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED');
+CREATE TYPE courseStatus AS ENUM ('ACCEPTED', 'PENDING');
 
 
 CREATE TABLE AppUser (
@@ -25,7 +26,8 @@ CREATE TABLE Course (
     startDate BIGINT NOT NULL,
     endDate BIGINT NOT NULL,
     category VARCHAR(255) NOT NULL,
-    capacity INTEGER NOT NULL
+    capacity INTEGER NOT NULL,
+    status courseStatus NOT NULL
 );
 
 CREATE TABLE Review (

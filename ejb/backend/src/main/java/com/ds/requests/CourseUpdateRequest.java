@@ -7,4 +7,5 @@ public class CourseUpdateRequest {
     public Long endDate;
     public String category;
     public Integer capacity;
+    public String status;
 }

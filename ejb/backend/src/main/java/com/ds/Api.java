@@ -381,7 +381,7 @@ public class Api {
             }
 
             try (PreparedStatement st = conn.prepareStatement(
-                    "INSERT INTO Course (instructorId, name, description, startDate, endDate, category, capacity) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+                    "INSERT INTO Course (instructorId, name, description, startDate, endDate, category, capacity, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING')")) {
                 int i = 1;
                 st.setObject(i++, rs.getObject("id", UUID.class));
                 st.setString(i++, req.name);
@@ -422,9 +422,8 @@ public class Api {
     @Path("/course/{id}")
     public Response updateCourse(@PathParam("id") UUID id, CourseUpdateRequest req) throws SQLException {
         return withRole(new String[] { ADMIN_ROLE, INSTRUCTOR_ROLE }, (conn, rs) -> {
-            if (req == null) {
+            if (req == null)
                 return Response.status(400).build();
-            }
 
             StringBuilder query = new StringBuilder("UPDATE Course SET ");
             ArrayList<String> updates = new ArrayList<>();
@@ -466,13 +465,21 @@ public class Api {
                 bindings.addLast((i, st) -> st.setInt(i, req.capacity));
             }
 
+            String role = rs.getString("role");
+            if (req.status != null && role.equals(ADMIN_ROLE)) {
+                if (!req.status.equals("ACCEPTED") && !req.status.equals("PENDING"))
+                    return Response.status(400).entity(new MessageResponse("Invalid status")).build();
+                updates.add("status = ?");
+                bindings.addLast((i, st) -> st.setString(i, req.status));
+            }
+
             if (updates.size() == 0)
                 return Response.status(400).build();
 
             query.append(String.join(",", updates));
             query.append(" WHERE id = ?");
 
-            boolean isInstructor = rs.getString("role").equals(INSTRUCTOR_ROLE);
+            boolean isInstructor = role.equals(INSTRUCTOR_ROLE);
             if (isInstructor)
                 query.append(" AND instructorId = ?");
 
@@ -482,8 +489,7 @@ public class Api {
                 if (isInstructor)
                     st.setObject(i++, rs.getObject("id"));
                 if (st.executeUpdate() != 0)
-                    return Response.status(404).entity(
-                            new MessageResponse("Could not find the specified course in the courses created by you"))
+                    return Response.status(404).entity(new MessageResponse("Could not find the specified course"))
                             .build();
                 return Response.ok().build();
             }
@@ -512,6 +518,7 @@ public class Api {
                     WHERE
                         Course.id = ?
                         AND Course.endDate <= %s
+                        AND Course.status = 'ACCEPTED'
                         AND Enrollment.studentId = ?
                         AND Enrollment.status = 'ACCEPTED'""", System.currentTimeMillis() / 1000L))) {
                 st.setObject(1, courseId);
@@ -567,7 +574,8 @@ public class Api {
                         Course.category,
                         Course.startDate,
                         Course.endDate,
-                        Course.capacity
+                        Course.capacity,
+                        Course.status
                     FROM Course
                         LEFT JOIN AppUser AS Instructor
                             ON Instructor.id = Course.instructorId
@@ -575,6 +583,10 @@ public class Api {
                         LEFT JOIN Review ON Review.courseId = Course.id""");
             ArrayList<String> where = new ArrayList<>();
             LinkedList<Binding> bindings = new LinkedList<>();
+            String role = accountRs.getString("role");
+            boolean instructorWantsTheirCourses = role.equals(INSTRUCTOR_ROLE) && mine != null;
+            if (!role.equals(ADMIN_ROLE) && !instructorWantsTheirCourses)
+                where.add("Course.status = 'ACCEPTED'");
             if (name != null) {
                 where.add("LOWER(Course.name) LIKE LOWER(?)");
                 bindings.addLast((i, st) -> st.setString(i, escapeLikeString(name)));
@@ -583,7 +595,7 @@ public class Api {
                 where.add("LOWER(Course.category) LIKE LOWER(?)");
                 bindings.addLast((i, st) -> st.setString(i, escapeLikeString(category)));
             }
-            if (accountRs.getString("role").equals(INSTRUCTOR_ROLE) && mine != null) {
+            if (instructorWantsTheirCourses) {
                 where.add("Instructor.id = ?");
                 bindings.addLast((i, st) -> st.setObject(i, accountRs.getString("id")));
             }
@@ -615,6 +627,7 @@ public class Api {
                             startDate = rs.getLong("startDate");
                             endDate = rs.getLong("endDate");
                             capacity = rs.getInt("capacity");
+                            status = rs.getString("status");
                         }
                     });
                 }
@@ -762,7 +775,8 @@ public class Api {
                         Enrollment
                         LEFT JOIN Course ON Course.id = Enrollment.courseId
                     WHERE
-                        Enrollment.studentId = ?""" + dateFilter)) {
+                        Enrollment.studentId = ?
+                        AND Course.status = 'ACCEPTED'""" + dateFilter)) {
                 st.setObject(1, accountRs.getObject("id", UUID.class));
                 ResultSet rs = st.executeQuery();
                 ArrayList<StudentEnrollmentResponse> enrollments = new ArrayList<>();
@@ -805,11 +819,18 @@ public class Api {
                 }
             }
 
-            Integer noCourses = 0;
-            try (PreparedStatement st = conn.prepareStatement("SELECT count(id) AS count FROM Course")) {
+            Integer noAcceptedCourses = 0;
+            Integer noPendingCourses = 0;
+            try (PreparedStatement st = conn.prepareStatement("SELECT count(id) AS count, status FROM Course")) {
                 ResultSet rs = st.executeQuery();
-                if (rs.next())
-                    noCourses = rs.getInt("count");
+                while (rs.next()) {
+                    Integer count = rs.getInt("count");
+                    String status = rs.getString("status");
+                    if (status.equals("ACCEPTED"))
+                        noAcceptedCourses = count;
+                    else if (status.equals("PENDING"))
+                        noPendingCourses = count;
+                }
             }
 
             Integer noAcceptedEnrollments = 0;
@@ -830,7 +851,8 @@ public class Api {
             final int nStudents = noStudents;
             final int nInstructors = noInstructors;
             final int nAdmins = noAdmins;
-            final int nCourses = noCourses;
+            final int nAcceptedCourses = noAcceptedCourses;
+            final int nPendingCourses = noPendingCourses;
             final int nAcceptedEnrollments = noAcceptedEnrollments;
             final int nRejectedEnrollments = noRejectedEnrollments;
             return Response.status(200).entity(new UsageResponse() {
@@ -838,7 +860,8 @@ public class Api {
                     numberOfStudents = nStudents;
                     numberOfInstructors = nInstructors;
                     numberOfAdmins = nAdmins;
-                    numberOfCourses = nCourses;
+                    numberOfAcceptedCourses = nAcceptedCourses;
+                    numberOfPendingCourses = nPendingCourses;
                     numberOfAcceptedEnrollments = nAcceptedEnrollments;
                     numberOfRejectedEnrollments = nRejectedEnrollments;
                 }
@@ -851,7 +874,8 @@ class UsageResponse {
     public Integer numberOfStudents;
     public Integer numberOfInstructors;
     public Integer numberOfAdmins;
-    public Integer numberOfCourses;
+    public Integer numberOfAcceptedCourses;
+    public Integer numberOfPendingCourses;
     public Integer numberOfAcceptedEnrollments;
     public Integer numberOfRejectedEnrollments;
 }
@@ -877,6 +901,7 @@ class CourseResponse {
     public Long startDate;
     public Long endDate;
     public Integer capacity;
+    public String status;
 }
 
 class CoursesResponse {
