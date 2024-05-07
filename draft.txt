@@ -54,9 +54,8 @@
   - Enrollments for courses that have ended are considered "past" enrollments
 
 - TODO
-  - Don't review unless you were enrolled
   - Track platform usage
-  - Add, remove, approve, reject, edit (if string) course content
+  - Approve/reject courses
   - View course details
 
 - Questions

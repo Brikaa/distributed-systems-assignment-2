@@ -503,15 +503,27 @@ public class Api {
             if (req.stars < 1 || req.stars > 5)
                 return Response.status(400).entity(new MessageResponse("Stars must be between 1 and 5")).build();
 
-            try (PreparedStatement st = conn.prepareStatement("SELECT id FROM Course where id = ?")) {
+            UUID studentId = accountRs.getObject("id", UUID.class);
+
+            try (PreparedStatement st = conn.prepareStatement(String.format("""
+                    SELECT Course.id, Enrollment.id
+                    FROM Course
+                        LEFT JOIN Enrollment ON Course.id = Enrollment.courseId
+                    WHERE
+                        Course.id = ?
+                        AND Course.endDate <= %s
+                        AND Enrollment.studentId = ?
+                        AND Enrollment.status = 'ACCEPTED'""", System.currentTimeMillis() / 1000L))) {
                 st.setObject(1, courseId);
+                st.setObject(2, studentId);
                 ResultSet rs = st.executeQuery();
                 if (!rs.next())
-                    return Response.status(404).entity(new MessageResponse("Could not find the specified course"))
+                    return Response.status(404)
+                            .entity(new MessageResponse(
+                                    "Could not find the specified course in finished courses you were enrolled in"))
                             .build();
             }
 
-            UUID studentId = accountRs.getObject("id", UUID.class);
             try (PreparedStatement st = conn
                     .prepareStatement("SELECT id FROM Review WHERE studentId = ? AND courseId = ?")) {
                 st.setObject(1, studentId);
@@ -520,6 +532,7 @@ public class Api {
                     return Response.status(400).entity(new MessageResponse("You already have a review on this course"))
                             .build();
             }
+
             try (PreparedStatement st = conn
                     .prepareStatement("INSERT INTO Review (studentId, courseId, stars, body) VALUES (?, ?, ?, ?)")) {
                 int i = 1;
