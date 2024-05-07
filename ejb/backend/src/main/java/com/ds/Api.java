@@ -431,9 +431,71 @@ public class Api {
                     st.setObject(2, rs.getObject("id", UUID.class));
                 if (st.executeUpdate() == 0)
                     return Response.status(404).entity(
-                            new MessageResponse("Could not find the specified course in the courses created by you"))
-                            .build();
+                            new MessageResponse("Could not find the specified course")).build();
                 return Response.ok().build();
+            }
+        });
+    }
+
+    @GET
+    @Path("/course/{id}")
+    public Response getCourse(@PathParam("id") UUID id) throws SQLException {
+        return withRole("*", (conn, accountRs) -> {
+            String role = accountRs.getString("role");
+            UUID accountId = accountRs.getObject("id", UUID.class);
+            String courseFilter = "";
+            if (role.equals(STUDENT_ROLE))
+                courseFilter = " AND Course.status = 'ACCEPTED'";
+            if (role.equals(INSTRUCTOR_ROLE))
+                courseFilter = " AND Course.status = 'ACCEPTED' OR Course.instructorId = ?";
+            try (PreparedStatement st = conn.prepareStatement(String.format("""
+                    SELECT
+                        Course.id,
+                        Course.name,
+                        Course.category,
+                        Course.description,
+                        Course.capacity,
+                        Course.instructorId,
+                        Course.startDate,
+                        Course.endDate,
+                        Count(Enrollment.id) AS numberOfEnrollments,
+                        Count(MyEnrollment.id) AS enrolled
+                        AVG(Review.stars) AS averageStars
+                        Course.status
+                    FROM Course
+                        LEFT JOIN Enrollment ON Enrollment.courseId = Course.id AND Enrollment.status = 'ACCEPTED'
+                        LEFT JOIN Enrollment AS MyEnrollment
+                            ON MyEnrollment.id = Enrollment.id
+                            AND MyEnrollment.studentId = ?
+                    WHERE
+                        Course.id = ?
+                        %s
+                    GROUP BY Course.id""", courseFilter))) {
+                st.setObject(1, accountId);
+                st.setObject(2, id);
+                if (role.equals(INSTRUCTOR_ROLE))
+                    st.setObject(3, accountId);
+                ResultSet rs = st.executeQuery();
+                if (!rs.next())
+                    return Response.status(404).entity(new MessageResponse("Could not find the specified course"))
+                            .build();
+                return Response.status(200).entity(new FullCourseResponse() {
+                    {
+                        id = rs.getObject("id", UUID.class);
+                        name = rs.getString("name");
+                        category = rs.getString("category");
+                        description = rs.getString("description");
+                        instructorId = rs.getObject("instructorId", UUID.class);
+                        startDate = rs.getLong("startDate");
+                        endDate = rs.getLong("endDate");
+                        capacity = rs.getInt("capacity");
+                        numberOfEnrollments = rs.getInt("numberOfEnrollments");
+                        numberOfReviews = rs.getInt("numberOfReviews");
+                        averageStars = rs.getInt("averageStars");
+                        status = rs.getString("status");
+                        enrolled = rs.getInt("enrolled") != 0;
+                    }
+                }).build();
             }
         });
     }
@@ -946,6 +1008,22 @@ class InstructorResponse {
     public String name;
     public Integer experience;
     public String bio;
+}
+
+class FullCourseResponse {
+    public UUID id;
+    public String name;
+    public String category;
+    public String description;
+    public UUID instructorId;
+    public Long startDate;
+    public Long endDate;
+    public Integer capacity;
+    public Integer numberOfEnrollments;
+    public Integer numberOfReviews;
+    public Integer averageStars;
+    public String status;
+    public Boolean enrolled;
 }
 
 class CourseResponse {

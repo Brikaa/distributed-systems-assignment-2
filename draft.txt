@@ -59,23 +59,10 @@
     - Number of 'REJECTED' enrollments
 
 - TODO
-  - View course details
-    - Students may only view accepted courses
-    - Instructors may only view accepted courses or pending courses that are theirs
-    - Admins can view any courses
-    - Content
-      - id
-      - name
-      - category
-      - description
-      - capacity
-      - number of accepted enrollments
-      - enrolled
-      - average number of stars
-      - status
   - Search for withRole and check that they are valid
   - Search for left joins and ensure there is no ambiguity in select
   - Check static analysis
+  - Switch .equals to .equalsIgnoreCase?
 
 - Questions
   - Real-time notifications?
