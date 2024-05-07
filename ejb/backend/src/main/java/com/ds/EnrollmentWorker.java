@@ -34,39 +34,38 @@ public class EnrollmentWorker implements MessageListener {
     }
 
     private void createEnrollment(String studentId, String courseId) throws SQLException {
-        try (Connection conn = dataSource.getInstance().getConnection()) {
-            try (PreparedStatement st = conn.prepareStatement("""
-                    SELECT
-                        Course.id AS id,
-                        Course.name AS name,
-                        Course.capacity AS capacity,
-                        Course.startDate AS startDate,
-                        COUNT(Enrollment.id) AS numberOfEnrollments
-                    FROM
-                        Course
-                        LEFT JOIN Enrollment ON Course.id = Enrollment.courseId
-                    WHERE Course.id = ?
-                    GROUP BY Course.id""")) {
-                st.setString(1, courseId);
-                ResultSet rs = st.executeQuery();
-                if (!rs.next()) {
-                    createNotification(conn, studentId,
-                            "Can't enroll in course with id: " + courseId + " since it was not found on the system.");
-                } else if (rs.getInt("numberOfEnrollments") > rs.getInt("capacity")) {
-                    createNotification(conn, studentId,
-                            "Can't enroll in '" + rs.getString("name") + "' since it is full");
-                } else if (rs.getLong("startDate") < System.currentTimeMillis()) {
-                    createNotification(conn, studentId,
-                            "Can't enroll in '" + rs.getString("name") + "' since it has already started");
-                } else {
-                    try (PreparedStatement st2 = conn.prepareStatement(
-                            "INSERT INTO Enrollment (studentId, courseId, status) VALUES (?, ?, 'PENDING')")) {
-                        st2.setString(1, studentId);
-                        st2.setString(2, courseId);
-                        st2.executeUpdate();
-                        createNotification(conn, studentId, "Submitted an enrollment request for: '"
-                                + rs.getString("name") + "', we will get back to you once it is accepted.");
-                    }
+        try (Connection conn = dataSource.getInstance().getConnection();
+                PreparedStatement st = conn.prepareStatement("""
+                        SELECT
+                            Course.id AS id,
+                            Course.name AS name,
+                            Course.capacity AS capacity,
+                            Course.startDate AS startDate,
+                            COUNT(Enrollment.id) AS numberOfEnrollments
+                        FROM
+                            Course
+                            LEFT JOIN Enrollment ON Course.id = Enrollment.courseId
+                        WHERE Course.id = ?
+                        GROUP BY Course.id""")) {
+            st.setString(1, courseId);
+            ResultSet rs = st.executeQuery();
+            if (!rs.next())
+                createNotification(conn, studentId,
+                        "Can't enroll in course with id: " + courseId + " since it was not found on the system.");
+            else if (rs.getInt("numberOfEnrollments") >= rs.getInt("capacity"))
+                createNotification(conn, studentId,
+                        "Can't enroll in '" + rs.getString("name") + "' since it is full");
+            else if (rs.getLong("startDate") < System.currentTimeMillis())
+                createNotification(conn, studentId,
+                        "Can't enroll in '" + rs.getString("name") + "' since it has already started");
+            else {
+                try (PreparedStatement st2 = conn.prepareStatement(
+                        "INSERT INTO Enrollment (studentId, courseId, status) VALUES (?, ?, 'PENDING')")) {
+                    st2.setString(1, studentId);
+                    st2.setString(2, courseId);
+                    st2.executeUpdate();
+                    createNotification(conn, studentId, "Submitted an enrollment request for: '"
+                            + rs.getString("name") + "', we will get back to you once it is accepted.");
                 }
             }
         }
@@ -77,6 +76,54 @@ public class EnrollmentWorker implements MessageListener {
         if (status.equals("ACCEPTED") || status.equals("REJECTED")) {
             System.err.println("Received invalid status: " + status);
             return;
+        }
+
+        final String invalid_enrollment = "Could not find enrollment with id: " + enrollmentId
+                + " that was sent to one of your courses";
+        try (Connection conn = dataSource.getInstance().getConnection();
+                PreparedStatement st = conn
+                        .prepareStatement("SELECT courseId, status, studentId FROM Enrollment WHERE id = ?")) {
+            st.setString(1, enrollmentId);
+            ResultSet rs = st.executeQuery();
+            if (!rs.next()) {
+                createNotification(conn, instructorId, invalid_enrollment);
+                return;
+            }
+            // TODO: abstract with one in createEnrollment
+            try (PreparedStatement courseSt = conn.prepareStatement("""
+                    SELECT
+                        Course.id AS id,
+                        Course.name AS name,
+                        Course.capacity AS capacity,
+                        Course.startDate AS startDate,
+                        COUNT(Enrollment.id) AS numberOfEnrollments
+                    FROM
+                        Course
+                        LEFT JOIN Enrollment ON Course.id = Enrollment.courseId
+                    WHERE
+                        Course.id = ?
+                        AND Course.instructorId = ?
+                    GROUP BY Course.id""")) {
+                courseSt.setString(1, rs.getString("courseId"));
+                courseSt.setString(2, instructorId);
+                ResultSet courseRs = courseSt.executeQuery();
+                if (!courseRs.next())
+                    createNotification(conn, instructorId, invalid_enrollment);
+                else if (!rs.getString("status").equals("PENDING"))
+                    createNotification(conn, instructorId,
+                            "Can't update enrollment of id: " + enrollmentId + " since it is not 'PENDING'.");
+                else if (status.equals("ACCEPTED") && rs.getInt("numberOfEnrollments") >= rs.getInt("capacity"))
+                    createNotification(conn, instructorId,
+                            "Can't accept enrollment of id: " + enrollmentId + " since course '"
+                                    + courseRs.getString("name") + "' is full.");
+                else if (status.equals("ACCEPTED") && rs.getLong("startDate") < System.currentTimeMillis())
+                    createNotification(conn, instructorId,
+                            "Can't accept enrollment of id: " + enrollmentId + " since course '"
+                                    + courseRs.getString("name") + "' has already started.");
+                else
+                    createNotification(conn, rs.getString("studentId"),
+                            "Your enrollment for '" + rs.getString("name") + " has been accepted.");
+            }
         }
         try (Connection conn = dataSource.getInstance().getConnection();
                 PreparedStatement st = conn.prepareStatement(
@@ -121,7 +168,7 @@ public class EnrollmentWorker implements MessageListener {
             if (op.equals("CREATE"))
                 createEnrollment(body[1], body[2]);
             else if (op.equals("UPDATE"))
-                updateEnrollment(body[1], body[2]);
+                updateEnrollment(body[1], body[1], body[2]);
             else if (op.equals("DELETE"))
                 deleteEnrollment(body[1]);
             else
