@@ -233,6 +233,29 @@ public class Api {
         });
     }
 
+    @GET
+    @Path("/instructor/{id}")
+    public Response getInstructor(@PathParam("id") UUID id) throws SQLException {
+        return withRole("*", (conn, _rs) -> {
+            try (PreparedStatement st = conn
+                    .prepareStatement("SELECT id, name, experience, bio FROM AppUser WHERE id = ?")) {
+                st.setObject(1, id);
+                ResultSet rs = st.executeQuery();
+                if (!rs.next())
+                    return Response.status(404).entity(new MessageResponse("Could not find the specified instructor"))
+                            .build();
+                return Response.status(200).entity(new InstructorResponse() {
+                    {
+                        id = rs.getObject("id", UUID.class);
+                        name = rs.getString("name");
+                        experience = rs.getInt("experience");
+                        bio = rs.getString("bio");
+                    }
+                }).build();
+            }
+        });
+    }
+
     @DELETE
     @Path("/user/{id}")
     public Response deleteUser(@PathParam("id") UUID id) throws SQLException {
@@ -914,6 +937,13 @@ class UserResponse {
     public String name;
     public String email;
     public String role;
+    public Integer experience;
+    public String bio;
+}
+
+class InstructorResponse {
+    public UUID id;
+    public String name;
     public Integer experience;
     public String bio;
 }
