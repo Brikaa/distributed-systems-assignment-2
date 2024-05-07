@@ -52,14 +52,16 @@
   - Cancelling an enrollment means deleting it
   - Enrollments for future/current courses are considered "current" enrollments
   - Enrollments for courses that have ended are considered "past" enrollments
+  - Platform usage is
+    - Number of registered students, instructors, admins
+    - Number of courses
+    - Number of 'ACCEPTED' enrollments
+    - Number of 'REJECTED' enrollments
 
 - TODO
-  - Track platform usage
   - Approve/reject courses
   - View course details
 
 - Questions
   - Real-time notifications?
     - If so, polling or event-driven?
-  - What is course content?
-    - Files? String? Or the course itself?

@@ -782,6 +782,78 @@ public class Api {
             }
         });
     }
+
+    @GET
+    @Path("/usage")
+    public Response getPlatformUsage() throws SQLException {
+        return withRole(ADMIN_ROLE, (conn, _rs) -> {
+            Integer noStudents = 0;
+            Integer noInstructors = 0;
+            Integer noAdmins = 0;
+            try (PreparedStatement st = conn
+                    .prepareStatement("SELECT count(id) AS count, role FROM AppUser GROUP BY role")) {
+                ResultSet rs = st.executeQuery();
+                while (rs.next()) {
+                    Integer count = rs.getInt("count");
+                    String role = rs.getString("role");
+                    if (role.equals(ADMIN_ROLE))
+                        noAdmins = count;
+                    else if (role.equals(STUDENT_ROLE))
+                        noStudents = count;
+                    else
+                        noInstructors = count;
+                }
+            }
+
+            Integer noCourses = 0;
+            try (PreparedStatement st = conn.prepareStatement("SELECT count(id) AS count FROM Course")) {
+                ResultSet rs = st.executeQuery();
+                if (rs.next())
+                    noCourses = rs.getInt("count");
+            }
+
+            Integer noAcceptedEnrollments = 0;
+            Integer noRejectedEnrollments = 0;
+            try (PreparedStatement st = conn
+                    .prepareStatement("SELECT count(id) AS count, status FROM Enrollment GROUP BY status")) {
+                ResultSet rs = st.executeQuery();
+                while (rs.next()) {
+                    Integer count = rs.getInt("count");
+                    String status = rs.getString("status");
+                    if (status.equals("ACCEPTED"))
+                        noAcceptedEnrollments = count;
+                    else if (status.equals("REJECTED"))
+                        noRejectedEnrollments = count;
+                }
+            }
+
+            final int nStudents = noStudents;
+            final int nInstructors = noInstructors;
+            final int nAdmins = noAdmins;
+            final int nCourses = noCourses;
+            final int nAcceptedEnrollments = noAcceptedEnrollments;
+            final int nRejectedEnrollments = noRejectedEnrollments;
+            return Response.status(200).entity(new UsageResponse() {
+                {
+                    numberOfStudents = nStudents;
+                    numberOfInstructors = nInstructors;
+                    numberOfAdmins = nAdmins;
+                    numberOfCourses = nCourses;
+                    numberOfAcceptedEnrollments = nAcceptedEnrollments;
+                    numberOfRejectedEnrollments = nRejectedEnrollments;
+                }
+            }).build();
+        });
+    }
+}
+
+class UsageResponse {
+    public Integer numberOfStudents;
+    public Integer numberOfInstructors;
+    public Integer numberOfAdmins;
+    public Integer numberOfCourses;
+    public Integer numberOfAcceptedEnrollments;
+    public Integer numberOfRejectedEnrollments;
 }
 
 class UserResponse {
