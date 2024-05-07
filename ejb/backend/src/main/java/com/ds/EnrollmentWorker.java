@@ -44,10 +44,10 @@ public class EnrollmentWorker implements MessageListener {
                             COUNT(Enrollment.id) AS numberOfEnrollments
                         FROM
                             Course
-                            LEFT JOIN Enrollment ON Course.id = Enrollment.courseId
-                        WHERE
-                            Course.id = ?
-                            AND Enrollment.status = 'ACCEPTED'
+                            LEFT JOIN Enrollment
+                                ON Course.id = Enrollment.courseId
+                                AND Enrollment.status = 'ACCEPTED'
+                        WHERE Course.id = ?
                         GROUP BY Course.id""")) {
             st.setString(1, courseId);
             ResultSet rs = st.executeQuery();
@@ -100,11 +100,12 @@ public class EnrollmentWorker implements MessageListener {
                         COUNT(Enrollment.id) AS numberOfEnrollments
                     FROM
                         Course
-                        LEFT JOIN Enrollment ON Course.id = Enrollment.courseId
+                        LEFT JOIN Enrollment
+                            ON Course.id = Enrollment.courseId
+                            AND Enrollment.status = 'ACCEPTED'
                     WHERE
                         Course.id = ?
                         AND Course.instructorId = ?
-                        AND Enrollment.status = 'ACCEPTED'
                     GROUP BY Course.id""")) {
                 courseSt.setString(1, rs.getString("courseId"));
                 courseSt.setString(2, instructorId);

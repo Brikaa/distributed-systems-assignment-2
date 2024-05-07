@@ -556,10 +556,10 @@ public class Api {
                         Course.endDate,
                         Course.capacity
                     FROM Course
-                        LEFT JOIN AppUser AS Instructor ON Instructor.id = Course.instructorId
-                        LEFT JOIN Review ON Review.courseId = Course.id
-                    WHERE
-                        Enrollment.status = 'ACCEPTED'""");
+                        LEFT JOIN AppUser AS Instructor
+                            ON Instructor.id = Course.instructorId
+                            AND Enrollment.status = 'ACCEPTED'
+                        LEFT JOIN Review ON Review.courseId = Course.id""");
             ArrayList<String> where = new ArrayList<>();
             LinkedList<Binding> bindings = new LinkedList<>();
             if (name != null) {
