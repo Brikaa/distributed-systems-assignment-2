@@ -54,13 +54,6 @@
   - Enrollments for courses that have ended are considered "past" enrollments
 
 - TODO
-  - Student view my enrollments (filterable by current/past)
-    - id
-    - courseId
-    - courseName
-    - courseStartDate
-    - status
-  - Show number of enrollments in list courses
   - Don't review unless you were enrolled
   - Track platform usage
   - Add, remove, approve, reject, edit (if string) course content

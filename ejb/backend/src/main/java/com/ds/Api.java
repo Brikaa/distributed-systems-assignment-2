@@ -550,13 +550,16 @@ public class Api {
                         Instructor.name AS instructorName,
                         AVG(Review.stars) AS averageStars,
                         COUNT(Review.id) AS numberOfReviews,
+                        COUNT(Enrollment.id) AS numberOfEnrollments,
                         Course.category,
                         Course.startDate,
                         Course.endDate,
                         Course.capacity
                     FROM Course
                         LEFT JOIN AppUser AS Instructor ON Instructor.id = Course.instructorId
-                        LEFT JOIN Review ON Review.courseId = Course.id""");
+                        LEFT JOIN Review ON Review.courseId = Course.id
+                    WHERE
+                        Enrollment.status = 'ACCEPTED'""");
             ArrayList<String> where = new ArrayList<>();
             LinkedList<Binding> bindings = new LinkedList<>();
             if (name != null) {
@@ -594,6 +597,7 @@ public class Api {
                             averageStars = rs.getInt("averageStars");
                             averageStars = averageStars == null ? 0 : averageStars;
                             numberOfReviews = rs.getInt("numberOfReviews");
+                            numberOfEnrollments = rs.getInt("numberOfEnrollments");
                             category = rs.getString("category");
                             startDate = rs.getLong("startDate");
                             endDate = rs.getLong("endDate");
@@ -783,6 +787,7 @@ class CourseResponse {
     public String instructorName;
     public Integer averageStars;
     public Integer numberOfReviews;
+    public Integer numberOfEnrollments;
     public String category;
     public Long startDate;
     public Long endDate;
