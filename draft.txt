@@ -62,7 +62,6 @@
   - View course details
   - Search for withRole and check that they are valid
   - Check static analysis
-  - Send error message for empty 400
 
 - Questions
   - Real-time notifications?

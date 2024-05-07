@@ -160,7 +160,7 @@ public class Api {
     public Response register(UserUpdateRequest req) throws SQLException {
         if (req.name == null || req.email == null || req.password == null || req.role == null || req.experience == null
                 || req.bio == null) {
-            return Response.status(400).build();
+            return Response.status(400).entity(new MessageResponse("Empty body")).build();
         }
 
         {
@@ -258,9 +258,6 @@ public class Api {
 
     private Response updateUser(Connection conn, String role, UUID sourceId, UUID targetId, UserUpdateRequest req)
             throws SQLException {
-        if (req == null) {
-            return Response.status(400).build();
-        }
         StringBuilder query = new StringBuilder("UPDATE AppUser SET ");
         ArrayList<String> updates = new ArrayList<>();
         LinkedList<Binding> bindings = new LinkedList<>();
@@ -308,7 +305,7 @@ public class Api {
         }
 
         if (updates.size() == 0)
-            return Response.status(400).build();
+            return Response.status(400).entity(new MessageResponse("Empty body")).build();
 
         query.append(String.join(",", updates));
         query.append(" WHERE id = ?");
@@ -366,7 +363,7 @@ public class Api {
         return withRole(INSTRUCTOR_ROLE, (conn, rs) -> {
             if (req.name.equals(null) || req.description == null || req.startDate == null || req.endDate == null
                     || req.category == null || req.capacity == null)
-                return Response.status(400).build();
+                return Response.status(400).entity(new MessageResponse("Empty body")).build();
 
             {
                 String err = null;
@@ -422,9 +419,6 @@ public class Api {
     @Path("/course/{id}")
     public Response updateCourse(@PathParam("id") UUID id, CourseUpdateRequest req) throws SQLException {
         return withRole(new String[] { ADMIN_ROLE, INSTRUCTOR_ROLE }, (conn, rs) -> {
-            if (req == null)
-                return Response.status(400).build();
-
             StringBuilder query = new StringBuilder("UPDATE Course SET ");
             ArrayList<String> updates = new ArrayList<>();
             LinkedList<Binding> bindings = new LinkedList<>();
@@ -474,7 +468,7 @@ public class Api {
             }
 
             if (updates.size() == 0)
-                return Response.status(400).build();
+                return Response.status(400).entity(new MessageResponse("Empty body")).build();
 
             query.append(String.join(",", updates));
             query.append(" WHERE id = ?");
@@ -504,7 +498,7 @@ public class Api {
                 req.body = "";
 
             if (req.stars == null)
-                return Response.status(400).build();
+                return Response.status(400).entity(new MessageResponse("Empty body")).build();
 
             if (req.stars < 1 || req.stars > 5)
                 return Response.status(400).entity(new MessageResponse("Stars must be between 1 and 5")).build();
@@ -668,7 +662,7 @@ public class Api {
     public Response updateNotification(@PathParam("id") UUID id, NotificationUpdateRequest req) throws SQLException {
         return withRole("*", (conn, accountRs) -> {
             if (req.isRead == null)
-                return Response.status(400).build();
+                return Response.status(400).entity(new MessageResponse("Empty body")).build();
             try (PreparedStatement st = conn.prepareStatement("UPDATE Notification SET isRead = "
                     + (req.isRead ? "true" : "false") + " WHERE id = ? AND userId = ?")) {
                 st.setObject(1, id);
