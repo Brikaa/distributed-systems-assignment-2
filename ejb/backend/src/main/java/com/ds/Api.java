@@ -652,7 +652,7 @@ public class Api {
     }
 
     @POST
-    @Path("/course/{id}/enroll")
+    @Path("/course/{id}/enrollment")
     public Response createEnrollment(@PathParam("id") UUID id) throws SQLException {
         return withRole(STUDENT_ROLE, (_conn, rs) -> {
             context.createProducer().send(queue, "CREATE:" + rs.getObject("id", UUID.class) + ":" + id);
@@ -678,6 +678,49 @@ public class Api {
             context.createProducer().send(queue,
                     "UPDATE:" + rs.getObject("id", UUID.class) + ":" + id + ":" + req.status);
             return Response.status(202).build();
+        });
+    }
+
+    @GET
+    @Path("/course/{id}/enrollment")
+    public Response listCourseEnrollments(@PathParam("id") UUID id) throws SQLException {
+        return withRole(INSTRUCTOR_ROLE, (conn, accountRs) -> {
+            // Make sure course belongs to instructor
+            try (PreparedStatement st = conn
+                    .prepareStatement("SELECT id FROM Course where id = ? AND instructorId = ?")) {
+                st.setObject(1, id);
+                st.setObject(2, accountRs.getObject("id", UUID.class));
+                ResultSet rs = st.executeQuery();
+                if (!rs.next())
+                    return Response.status(404)
+                            .entity(new MessageResponse("Could not find the specified course in your courses")).build();
+            }
+            try (PreparedStatement st = conn.prepareStatement("""
+                    SELECT
+                        Enrollment.id AS id,
+                        Enrollment.studentId AS studentId,
+                        Student.name as studentName,
+                        Enrollment.status as status
+                    FROM
+                        Enrollment
+                        LEFT JOIN Student ON Student.id = Enrollment.studentId
+                    WHERE
+                        Enrollment.courseId = ?""")) {
+                st.setObject(1, id);
+                ResultSet rs = st.executeQuery();
+                ArrayList<EnrollmentResponse> enrollments = new ArrayList<>();
+                while (rs.next()) {
+                    enrollments.add(new EnrollmentResponse() {
+                        {
+                            id = rs.getObject("id", UUID.class);
+                            studentId = rs.getObject("studentId", UUID.class);
+                            studentName = rs.getString("studentName");
+                            status = rs.getString("status");
+                        }
+                    });
+                }
+                return Response.status(200).entity(new EnrollmentsResponse(enrollments)).build();
+            }
         });
     }
 }
@@ -724,6 +767,21 @@ class NotificationsResponse {
 
     public NotificationsResponse(ArrayList<NotificationResponse> notifications) {
         this.notifications = notifications;
+    }
+}
+
+class EnrollmentResponse {
+    public UUID id;
+    public UUID studentId;
+    public String studentName;
+    public String status;
+}
+
+class EnrollmentsResponse {
+    public ArrayList<EnrollmentResponse> enrollments;
+
+    public EnrollmentsResponse(ArrayList<EnrollmentResponse> enrollments) {
+        this.enrollments = enrollments;
     }
 }
 

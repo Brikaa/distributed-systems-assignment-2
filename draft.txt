@@ -52,10 +52,11 @@
   - Cancelling an enrollment means deleting it
 
 - TODO
-  - Student create enrollment
-  - Student cancel enrollment
-  - Instructor accept/reject enrollment (and notify student)
   - Instructor view course enrollments
+    - id
+    - studentId
+    - studentName
+    - status
   - Student view my enrollments (filterable by current/past)
   - Show number of enrollments in list courses
   - Don't review unless you were enrolled
