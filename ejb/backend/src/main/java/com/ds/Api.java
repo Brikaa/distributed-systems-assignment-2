@@ -490,6 +490,41 @@ public class Api {
         });
     }
 
+    @GET
+    @Path("/course/{courseId}/review")
+    public Response listReviews(@PathParam("courseId") UUID courseId) throws SQLException {
+        return withRole("*", (conn, accountRs) -> {
+            try (PreparedStatement st = conn
+                    .prepareStatement("SELECT id FROM Course WHERE id = ? AND status = 'ACCEPTED'")) {
+                st.setObject(1, courseId);
+                ResultSet rs = st.executeQuery();
+                if (!rs.next())
+                    return Response.status(404).entity(new MessageResponse("Could not find the specified course"))
+                            .build();
+            }
+            try (PreparedStatement st = conn.prepareStatement("""
+                    SELECT Review.id, Review.studentId, Student.name AS studentName, stars, body
+                    FROM Review
+                        LEFT JOIN AppUser AS Student ON Student.id = Review.studentId
+                    WHERE Review.courseId = ?""")) {
+                st.setObject(1, courseId);
+                ResultSet rs = st.executeQuery();
+                ArrayList<ReviewResponse> reviews = new ArrayList<>();
+                while (rs.next()) {
+                    reviews.add(new ReviewResponse() {
+                        {
+                            studentId = rs.getObject("studentId", UUID.class);
+                            studentName = rs.getString("studentName");
+                            stars = rs.getInt("stars");
+                            body = rs.getString("body");
+                        }
+                    });
+                }
+                return Response.status(200).entity(new ReviewsResponse(reviews)).build();
+            }
+        });
+    }
+
     @POST
     @Path("/course/{courseId}/review")
     public Response createReview(@PathParam("courseId") UUID courseId, ReviewCreateRequest req) throws SQLException {
@@ -967,6 +1002,22 @@ class TokenResponse {
     public TokenResponse(String token) {
         this.token = token;
     }
+}
+
+class ReviewResponse {
+    UUID studentId;
+    String studentName;
+    Integer stars;
+    String body;
+}
+
+class ReviewsResponse {
+    public ArrayList<ReviewResponse> reviews;
+
+    public ReviewsResponse(ArrayList<ReviewResponse> reviews) {
+        this.reviews = reviews;
+    }
+
 }
 
 interface Binding {
