@@ -59,8 +59,6 @@
     - Number of 'REJECTED' enrollments
 
 - TODO
-  - Search for withRole and check that they are valid
-  - Search for left joins and ensure there is no ambiguity in select
   - Check static analysis
   - Switch .equals to .equalsIgnoreCase?
 

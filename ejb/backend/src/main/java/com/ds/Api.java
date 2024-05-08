@@ -51,10 +51,10 @@ public class Api {
     @Resource(lookup = "java:/queue/enrollments")
     private Queue queue;
 
-    private final String ADMIN_ROLE = "ADMIN";
-    private final String INSTRUCTOR_ROLE = "INSTRUCTOR";
-    private final String STUDENT_ROLE = "STUDENT";
-    private final Pattern EMAIL_REGEX = Pattern.compile("^[a-zA-Z0-9_!#$%&’*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$");
+    private static final String ADMIN_ROLE = "ADMIN";
+    private static final String INSTRUCTOR_ROLE = "INSTRUCTOR";
+    private static final String STUDENT_ROLE = "STUDENT";
+    private static final Pattern EMAIL_REGEX = Pattern.compile("^[a-zA-Z0-9_!#$%&’*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$");
 
     private Response withRole(String[] roles, Callback callback) throws SQLException {
         String authHeader = servletRequest.getHeader("Authorization");
@@ -327,7 +327,7 @@ public class Api {
             bindings.addLast((i, st) -> st.setString(i, req.bio));
         }
 
-        if (updates.size() == 0)
+        if (updates.isEmpty())
             return Response.status(400).entity(new MessageResponse("Empty body")).build();
 
         query.append(String.join(",", updates));
@@ -384,7 +384,7 @@ public class Api {
     @Path("/course")
     public Response createCourse(CourseUpdateRequest req) throws SQLException {
         return withRole(INSTRUCTOR_ROLE, (conn, rs) -> {
-            if (req.name.equals(null) || req.description == null || req.startDate == null || req.endDate == null
+            if (req.name == null || req.description == null || req.startDate == null || req.endDate == null
                     || req.category == null || req.capacity == null)
                 return Response.status(400).entity(new MessageResponse("Empty body")).build();
 
@@ -552,7 +552,7 @@ public class Api {
                 bindings.addLast((i, st) -> st.setString(i, req.status));
             }
 
-            if (updates.size() == 0)
+            if (updates.isEmpty())
                 return Response.status(400).entity(new MessageResponse("Empty body")).build();
 
             query.append(String.join(",", updates));
@@ -714,7 +714,7 @@ public class Api {
                 bindings.addLast((i, st) -> st.setObject(i, accountRs.getString("id")));
             }
 
-            if (where.size() > 0)
+            if (!where.isEmpty())
                 query.append(" WHERE " + String.join(" AND ", where));
 
             query.append(" GROUP BY Course.id, Instructor.id");
