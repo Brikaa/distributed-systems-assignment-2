@@ -1,30 +1,30 @@
 networks:
-  db:
+  api:
+  user:
 
 volumes:
-  db:
+  user-db:
 
 services:
-  backend:
-    build: backend/
-    ports:
-      - '8080:8080'
+  user:
+    build: user/
     networks:
-      - db
+      - api
+      - user
     depends_on:
-      db:
+      user-db:
         condition: service_healthy
     environment:
       - DB_PASSWORD=user123
       - DB_USER=user
       - DB_NAME=app
       - DB_HOST=db
-  db:
-    build: db/
+  user-db:
+    build: user-db/
     networks:
-      - db
+      - user
     volumes:
-      - db:/var/lib/postgresql/data
+      - user-db:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD=user123
       - POSTGRES_USER=user

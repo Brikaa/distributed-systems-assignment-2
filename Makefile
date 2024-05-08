@@ -8,8 +8,8 @@ stop:
 logs:
 	docker compose logs -f
 
-sql:
-	docker compose exec -it db psql -U user -d app
+%-sql:
+	docker compose exec -it $*-db psql -U user -d app
 
 migrate:
 	docker compose down -t 1 -v

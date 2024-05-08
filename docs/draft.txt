@@ -57,3 +57,31 @@
     - Number of courses
     - Number of 'ACCEPTED' enrollments
     - Number of 'REJECTED' enrollments
+
+- Splitting into microservices
+  - Possible microservices
+    - Users, auth
+    - Courses, reviews, enrollments
+    - Notifications
+
+  - Cross-cutting concerns
+    - For each course, need to get the instructor name (get instructor names endpoint?)
+    - For each enrollment, need to get the student name (get student name endpoint?)
+    - For each review, need to get the student name (get student name endpoint?)
+
+  - How to handle authorization?
+    - API gateway
+      - Single point of entry to the API that does authorization
+      - API gateway adds user info to the request
+      - What if services need to communicate with each other (A -> B)
+        - Need to put user info in request
+    - Auth service (chosen)
+      - Multiple points of entries, each communicate with the Auth service
+      - Auth service returns info about user
+      - What if services to communicate with each other?
+        - Duplicate auth?
+        - Need to put auth info in request
+
+  - Auth endpoint details
+    - Takes basic auth token
+    - Returns user info or 401
