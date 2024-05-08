@@ -90,7 +90,7 @@ public class Api {
                 boolean found = false;
                 String myRole = rs.getString("role");
                 for (String role : roles) {
-                    if (role.equalsIgnoreCase(myRole)) {
+                    if (role.equals(myRole)) {
                         found = true;
                         break;
                     }
