@@ -217,7 +217,8 @@ public class Api {
     public Response getInstructor(@PathParam("id") UUID id) throws SQLException {
         return withRole("*", (conn, _rs) -> {
             try (PreparedStatement st = conn
-                    .prepareStatement("SELECT id, name, experience, bio FROM AppUser WHERE id = ?")) {
+                    .prepareStatement("SELECT id, name, experience, bio FROM AppUser WHERE id = ? AND role = "
+                            + INSTRUCTOR_ROLE)) {
                 st.setObject(1, id);
                 ResultSet rs = st.executeQuery();
                 if (!rs.next())
@@ -228,6 +229,28 @@ public class Api {
                         id = rs.getObject("id", UUID.class);
                         name = rs.getString("name");
                         experience = rs.getInt("experience");
+                        bio = rs.getString("bio");
+                    }
+                }).build();
+            }
+        });
+    }
+
+    @GET
+    @Path("/student/{id}")
+    public Response getStudent(@PathParam("id") UUID id) throws SQLException {
+        return withRole("*", (conn, _rs) -> {
+            try (PreparedStatement st = conn
+                    .prepareStatement("SELECT id, name, bio FROM AppUser WHERE id = ? AND role = " + STUDENT_ROLE)) {
+                st.setObject(1, id);
+                ResultSet rs = st.executeQuery();
+                if (!rs.next())
+                    return Response.status(404).entity(new MessageResponse("Could not find the specified student"))
+                            .build();
+                return Response.status(200).entity(new StudentResponse() {
+                    {
+                        id = rs.getObject("id", UUID.class);
+                        name = rs.getString("name");
                         bio = rs.getString("bio");
                     }
                 }).build();
@@ -338,6 +361,41 @@ public class Api {
             return updateUser(conn, "*", myId, myId, req);
         });
     }
+
+    @GET
+    @Path("/user-count")
+    public Response countUsers() throws SQLException {
+        return withRole(ADMIN_ROLE, (conn, _rs) -> {
+            Integer noStudents = 0;
+            Integer noInstructors = 0;
+            Integer noAdmins = 0;
+            try (PreparedStatement st = conn
+                    .prepareStatement("SELECT count(id) AS count, role FROM AppUser GROUP BY role")) {
+                ResultSet rs = st.executeQuery();
+                while (rs.next()) {
+                    Integer count = rs.getInt("count");
+                    String role = rs.getString("role");
+                    if (role.equals(ADMIN_ROLE))
+                        noAdmins = count;
+                    else if (role.equals(STUDENT_ROLE))
+                        noStudents = count;
+                    else
+                        noInstructors = count;
+                }
+            }
+
+            final Integer nStudents = noStudents;
+            final Integer nInstructors = noInstructors;
+            final Integer nAdmins = noAdmins;
+            return Response.ok().entity(new UserCountResponse() {
+                {
+                    numberOfStudents = nStudents;
+                    numberOfInstructors = nInstructors;
+                    numberOfAdmins = nAdmins;
+                }
+            }).build();
+        });
+    }
 }
 
 class UserResponse {
@@ -354,6 +412,18 @@ class InstructorResponse {
     public String name;
     public Integer experience;
     public String bio;
+}
+
+class StudentResponse {
+    public UUID id;
+    public String name;
+    public String bio;
+}
+
+class UserCountResponse {
+    public Integer numberOfStudents;
+    public Integer numberOfInstructors;
+    public Integer numberOfAdmins;
 }
 
 class MessageResponse {

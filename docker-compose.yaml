@@ -1,9 +1,11 @@
 networks:
   api:
   user:
+  elearning:
 
 volumes:
   user-db:
+  elearning-db:
 
 services:
   user:
@@ -25,6 +27,35 @@ services:
       - user
     volumes:
       - user-db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=user123
+      - POSTGRES_USER=user
+      - POSTGRES_DB=app
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U user -d app']
+      interval: 3s
+      timeout: 5s
+      retries: 5
+  elearning:
+    build: elearning/
+    networks:
+      - api
+      - elearning
+    depends_on:
+      elearning-db:
+        condition: service_healthy
+    environment:
+      - DB_PASSWORD=user123
+      - DB_USER=user
+      - DB_NAME=app
+      - DB_HOST=db
+      - USER_SERVICE_URL=http://user:8080/user
+  elearning-db:
+    build: elearning-db/
+    networks:
+      - elearning
+    volumes:
+      - elearning-db:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD=user123
       - POSTGRES_USER=user
