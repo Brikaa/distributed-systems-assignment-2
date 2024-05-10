@@ -9,7 +9,8 @@ CREATE TABLE AppUser (
     password varchar(255) NOT NULL,
     role role NOT NULL,
     experience SMALLINT NOT NULL,
-    bio TEXT NOT NULL
+    bio TEXT NOT NULL,
+    affiliation varchar(255) NOT NULL
 );
 
 INSERT INTO

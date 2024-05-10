@@ -1,0 +1,21 @@
+- Register Instructor (name: i1, email: i1@i1.com, password: i1123, affiliation: cu, experience: 13, bio: 'this is a cool instructor', role: instructor)
+  - Success
+- Register Instructor (name: '', email: i1@i1.com, password: i1123, affiliation: cu, experience: 13, bio: 'this is a cool instructor', role: instructor)
+  - Fail: name can't be empty
+- Register Instructor (name: i1, email: i1i1.com, password: i1123, affiliation: cu, experience: 13, bio: 'this is a cool instructor', role: instructor)
+  - Fail: invalid email
+- Register Instructor (name: i1, email: i1@i1.com, password: i1, affiliation: cu, experience: 13, bio: 'this is a cool instructor', role: instructor)
+  - Fail: short password
+- Register Instructor (name: i1, email: i1@i1.com, password: i1123, affiliation: '', experience: 13, bio: 'this is a cool instructor', role: instructor)
+  - Fail: empty affiliation
+- Register Instructor (name: i1, email: i1@i1.com, password: i1123, affiliation: cu, experience: -13, bio: 'this is a cool instructor', role: instructor)
+  - Fail: negative affiliation
+- Register Instructor (name: i1, email: i1@i1.com, password: i1123, affiliation: cu, experience: 13, bio: 'this is a cool instructor', role: admin)
+  - Fail: invalid role
+- Login instructor (i1, i123)
+  - Fail
+- Login instructor (i2, i1123)
+  - Fail
+- Login instructor (i1, i1123)
+  - Success
+-

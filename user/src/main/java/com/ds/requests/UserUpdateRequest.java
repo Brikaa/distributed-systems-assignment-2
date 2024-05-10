@@ -7,4 +7,5 @@ public class UserUpdateRequest {
     public String role;
     public Integer experience;
     public String bio;
+    public String affiliation;
 }

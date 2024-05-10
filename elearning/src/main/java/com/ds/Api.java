@@ -760,13 +760,6 @@ class UsageResponse {
     public Integer numberOfRejectedEnrollments;
 }
 
-class InstructorResponse {
-    public UUID id;
-    public String name;
-    public Integer experience;
-    public String bio;
-}
-
 class FullCourseResponse {
     public UUID id;
     public String name;
@@ -886,10 +879,19 @@ class RequestContext {
     public String bio;
 }
 
+class InstructorResponse {
+    public UUID id;
+    public String name;
+    public Integer experience;
+    public String bio;
+    public String affiliation;
+}
+
 class StudentResponse {
     public UUID id;
     public String name;
     public String bio;
+    public String affiliation;
 }
 
 class UserCountResponse {

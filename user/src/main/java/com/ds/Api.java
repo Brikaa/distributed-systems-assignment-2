@@ -122,12 +122,16 @@ public class Api {
         return name.isEmpty() ? "Name can't be empty" : null;
     }
 
+    private String getInvalidAffiliationError(String affiliation) {
+        return affiliation.isEmpty() ? "Affiliation can't be empty" : null;
+    }
+
     private String getInvalidEmailError(String email) {
         return !EMAIL_REGEX.matcher(email).matches() ? "Invalid email" : null;
     }
 
     private String getInvalidPasswordError(String password) {
-        return password.length() < 8 ? "Password must be at least 8 characters long" : null;
+        return password.length() < 4 ? "Password must be at least 4 characters long" : null;
     }
 
     private String getInvalidExperienceError(int experience) {
@@ -138,13 +142,15 @@ public class Api {
     @Path("/register")
     public Response register(UserUpdateRequest req) throws SQLException {
         if (req.name == null || req.email == null || req.password == null || req.role == null || req.experience == null
-                || req.bio == null) {
-            return Response.status(400).entity(new MessageResponse("Empty body")).build();
+                || req.bio == null || req.affiliation == null) {
+            return Response.status(400).entity(new MessageResponse("Incomplete body")).build();
         }
 
         {
             String err = null;
             if ((err = getInvalidUserNameError(req.name)) != null)
+                return Response.status(400).entity(new MessageResponse(err)).build();
+            if ((err = getInvalidAffiliationError(req.affiliation)) != null)
                 return Response.status(400).entity(new MessageResponse(err)).build();
             if ((err = getInvalidEmailError(req.email)) != null)
                 return Response.status(400).entity(new MessageResponse(err)).build();
@@ -158,7 +164,7 @@ public class Api {
 
         try (Connection conn = dataSource.getInstance().getConnection();
                 PreparedStatement st = conn.prepareStatement(
-                        "INSERT INTO AppUser (name, email, password, role, experience, bio) VALUES (?, ?, ?, ?, ?, ?)")) {
+                        "INSERT INTO AppUser (name, email, password, role, experience, bio, affiliation) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
             int i = 1;
             st.setString(i++, req.name);
             st.setString(i++, req.email);
@@ -184,6 +190,7 @@ public class Api {
                 if (role.equals(INSTRUCTOR_ROLE))
                     experience = rs.getInt("experience");
                 bio = rs.getString("bio");
+                affiliation = rs.getString("affiliation");
             }
         };
     }
@@ -201,7 +208,8 @@ public class Api {
     public Response getUser(@PathParam("id") UUID id) throws SQLException {
         return withRole(ADMIN_ROLE, (conn, _rs) -> {
             try (PreparedStatement st = conn
-                    .prepareStatement("SELECT id, name, email, role, experience, bio FROM AppUser WHERE id = ?")) {
+                    .prepareStatement(
+                            "SELECT id, name, email, role, experience, bio, affiliation FROM AppUser WHERE id = ?")) {
                 st.setObject(1, id);
                 ResultSet rs = st.executeQuery();
                 if (!rs.next())
@@ -217,8 +225,9 @@ public class Api {
     public Response getInstructor(@PathParam("id") UUID id) throws SQLException {
         return withRole("*", (conn, _rs) -> {
             try (PreparedStatement st = conn
-                    .prepareStatement("SELECT id, name, experience, bio FROM AppUser WHERE id = ? AND role = "
-                            + INSTRUCTOR_ROLE)) {
+                    .prepareStatement(
+                            "SELECT id, name, experience, bio, affiliation FROM AppUser WHERE id = ? AND role = "
+                                    + INSTRUCTOR_ROLE)) {
                 st.setObject(1, id);
                 ResultSet rs = st.executeQuery();
                 if (!rs.next())
@@ -230,6 +239,7 @@ public class Api {
                         name = rs.getString("name");
                         experience = rs.getInt("experience");
                         bio = rs.getString("bio");
+                        affiliation = rs.getString("affiliation");
                     }
                 }).build();
             }
@@ -241,7 +251,8 @@ public class Api {
     public Response getStudent(@PathParam("id") UUID id) throws SQLException {
         return withRole("*", (conn, _rs) -> {
             try (PreparedStatement st = conn
-                    .prepareStatement("SELECT id, name, bio FROM AppUser WHERE id = ? AND role = " + STUDENT_ROLE)) {
+                    .prepareStatement(
+                            "SELECT id, name, bio, affiliation FROM AppUser WHERE id = ? AND role = " + STUDENT_ROLE)) {
                 st.setObject(1, id);
                 ResultSet rs = st.executeQuery();
                 if (!rs.next())
@@ -252,6 +263,7 @@ public class Api {
                         id = rs.getObject("id", UUID.class);
                         name = rs.getString("name");
                         bio = rs.getString("bio");
+                        affiliation = rs.getString("affiliation");
                     }
                 }).build();
             }
@@ -295,6 +307,13 @@ public class Api {
             bindings.addLast((i, st) -> st.setString(i, req.name));
         }
 
+        if (req.affiliation != null) {
+            if ((err = getInvalidAffiliationError(req.affiliation)) != null)
+                return Response.status(400).entity(new MessageResponse(err)).build();
+            updates.add("affiliation  ?");
+            bindings.addLast((i, st) -> st.setString(i, req.affiliation));
+        }
+
         if (req.email != null) {
             if ((err = getInvalidEmailError(req.email)) != null)
                 return Response.status(400).entity(new MessageResponse(err)).build();
@@ -316,7 +335,6 @@ public class Api {
             bindings.addLast((i, st) -> st.setString(i, req.role));
         }
 
-        // FIXME: admin can set student experience
         if ((role.equals(ADMIN_ROLE) || role.equals(INSTRUCTOR_ROLE)) && req.experience != null) {
             if ((err = getInvalidExperienceError(req.experience)) != null)
                 return Response.status(400).entity(new MessageResponse(err)).build();
@@ -405,6 +423,7 @@ class UserResponse {
     public String role;
     public Integer experience;
     public String bio;
+    public String affiliation;
 }
 
 class InstructorResponse {
@@ -412,12 +431,14 @@ class InstructorResponse {
     public String name;
     public Integer experience;
     public String bio;
+    public String affiliation;
 }
 
 class StudentResponse {
     public UUID id;
     public String name;
     public String bio;
+    public String affiliation;
 }
 
 class UserCountResponse {
