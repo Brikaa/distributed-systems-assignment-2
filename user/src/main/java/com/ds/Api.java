@@ -175,6 +175,7 @@ public class Api {
             else
                 st.setInt(i++, 0);
             st.setString(i++, req.bio);
+            st.setString(i++, req.affiliation);
             st.executeUpdate();
         }
         return Response.ok().build();
@@ -310,7 +311,7 @@ public class Api {
         if (req.affiliation != null) {
             if ((err = getInvalidAffiliationError(req.affiliation)) != null)
                 return Response.status(400).entity(new MessageResponse(err)).build();
-            updates.add("affiliation  ?");
+            updates.add("affiliation = ?");
             bindings.addLast((i, st) -> st.setString(i, req.affiliation));
         }
 

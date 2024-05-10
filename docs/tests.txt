@@ -1,5 +1,6 @@
 - Register Instructor (name: i1, email: i1@i1.com, password: i1123, affiliation: cu, experience: 13, bio: 'this is a cool instructor', role: instructor)
   - Success
+
 - Register Instructor (name: '', email: i1@i1.com, password: i1123, affiliation: cu, experience: 13, bio: 'this is a cool instructor', role: instructor)
   - Fail: name can't be empty
 - Register Instructor (name: i1, email: i1i1.com, password: i1123, affiliation: cu, experience: 13, bio: 'this is a cool instructor', role: instructor)
@@ -16,6 +17,30 @@
   - Fail
 - Login instructor (i2, i1123)
   - Fail
+- View user
+  - Fail
+
 - Login instructor (i1, i1123)
   - Success
--
+- Login instructor (i1@i1.com, i1123)
+  - Success
+- View user
+  - name: i1, email: i1@i1.com, affiliation: cu, experience: 13, bio: 'this is a cool instructor', role: instructor
+
+- Create student: (name: s1, email: s1@s1.com, password: s1123, affiliation: cu, experience: 13, bio: 'this is a cool student', role: student)
+  - Success
+- Login student (s1, s1123)
+  - Success
+- View user
+  - name: s1, email: s1@s1.com, affiliation: cu, bio: 'this is a cool student', role: student
+- List courses
+  - []
+- List my enrollments
+  - []
+
+- Create course (name: i1c1, description: i1c1d, start: next week, end: after two weeks, category: 'Machine learning',    capacity: 300)
+  - Success
+
+- Create same course while not logged in
+  - Fail
+
