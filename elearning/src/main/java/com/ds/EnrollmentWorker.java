@@ -49,14 +49,13 @@ public class EnrollmentWorker implements MessageListener {
             } catch (Exception e) {
                 e.printStackTrace();
                 conn.rollback();
-                return;
+                throw e;
             }
-            try (PreparedStatement st = conn.prepareStatement("""
+            try (PreparedStatement st = conn.prepareStatement(String.format("""
                     SELECT
                         Course.id AS id,
                         Course.name AS name,
                         Course.capacity AS capacity,
-                        Course.startDate AS startDate,
                         COUNT(Enrollment.id) AS numberOfEnrollments
                     FROM
                         Course
@@ -66,18 +65,14 @@ public class EnrollmentWorker implements MessageListener {
                     WHERE
                         Course.id = ?
                         AND Course.status = 'ACCEPTED'
-                    GROUP BY Course.id""")) {
+                        AND Course.startDate > %s
+                        AND numberOfEnrollments < capacity
+                    GROUP BY Course.id""", System.currentTimeMillis() / 1000L))) {
                 st.setString(1, courseId);
                 ResultSet rs = st.executeQuery();
                 if (!rs.next())
-                    createNotification(conn, studentId,
-                            "Can't enroll in course with id: " + courseId + " since it was not found.");
-                else if (rs.getInt("numberOfEnrollments") >= rs.getInt("capacity"))
-                    createNotification(conn, studentId,
-                            "Can't enroll in '" + rs.getString("name") + "' since it is full");
-                else if (rs.getLong("startDate") * 1000 < System.currentTimeMillis())
-                    createNotification(conn, studentId,
-                            "Can't enroll in '" + rs.getString("name") + "' since it has already started");
+                    createNotification(conn, studentId, "Can't enroll in course with id: " + courseId
+                            + " since it was not found in future non-full courses.");
                 else {
                     try (PreparedStatement st2 = conn.prepareStatement(
                             "INSERT INTO Enrollment (studentId, courseId, status) VALUES (?, ?, 'PENDING')")) {
@@ -92,7 +87,7 @@ public class EnrollmentWorker implements MessageListener {
             } catch (Exception e) {
                 e.printStackTrace();
                 conn.rollback();
-                return;
+                throw e;
             }
         }
     }
@@ -103,67 +98,65 @@ public class EnrollmentWorker implements MessageListener {
             return;
         }
 
-        final String invalid_enrollment = "Could not find enrollment with id: " + enrollmentId
-                + " that was sent to one of your courses";
-        try (Connection conn = dataSource.getInstance().getConnection();
-                PreparedStatement st = conn
-                        .prepareStatement("SELECT courseId, status, studentId FROM Enrollment WHERE id = ?")) {
+        try (Connection conn = dataSource.getInstance().getConnection()) {
             conn.setAutoCommit(false);
-            st.setString(1, enrollmentId);
-            ResultSet rs = st.executeQuery();
-            if (!rs.next()) {
-                createNotification(conn, instructorId, invalid_enrollment);
-                return;
-            }
-            // TODO: abstract with query in createEnrollment
-            try (PreparedStatement courseSt = conn.prepareStatement("""
-                    SELECT
-                        Course.id AS id,
-                        Course.name AS name,
-                        Course.capacity AS capacity,
-                        Course.startDate AS startDate,
-                        COUNT(Enrollment.id) AS numberOfEnrollments
-                    FROM
-                        Course
-                        LEFT JOIN Enrollment
-                            ON Course.id = Enrollment.courseId
-                            AND Enrollment.status = 'ACCEPTED'
-                    WHERE
-                        Course.id = ?
-                        AND Course.status = 'ACCEPTED'
-                        AND Course.instructorId = ?
-                    GROUP BY Course.id""")) {
-                courseSt.setString(1, rs.getString("courseId"));
-                courseSt.setString(2, instructorId);
-                ResultSet courseRs = courseSt.executeQuery();
-                if (!courseRs.next())
+            try (PreparedStatement enrollmentSt = conn.prepareStatement(
+                    "SELECT courseId, status, studentId FROM Enrollment WHERE id = ? AND status = 'PENDING'")) {
+                enrollmentSt.setString(1, enrollmentId);
+                ResultSet enrollmentRs = enrollmentSt.executeQuery();
+                final String invalid_enrollment = "Could not find a pending enrollment with id: " + enrollmentId
+                        + " that was sent to one of your non-full courses";
+                if (!enrollmentRs.next()) {
                     createNotification(conn, instructorId, invalid_enrollment);
-                else if (!rs.getString("status").equals("PENDING"))
-                    createNotification(conn, instructorId,
-                            "Can't update enrollment of id: " + enrollmentId + " since it is not 'PENDING'.");
-                else if (status.equals("ACCEPTED") && rs.getInt("numberOfEnrollments") >= rs.getInt("capacity"))
-                    createNotification(conn, instructorId,
-                            "Can't accept enrollment of id: " + enrollmentId + " since course '"
-                                    + courseRs.getString("name") + "' is full.");
-                else if (status.equals("ACCEPTED") && rs.getLong("startDate") * 1000 < System.currentTimeMillis())
-                    createNotification(conn, instructorId,
-                            "Can't accept enrollment of id: " + enrollmentId + " since course '"
-                                    + courseRs.getString("name") + "' has already started.");
-                try (PreparedStatement st2 = conn.prepareStatement("UPDATE Enrollment SET status = ? WHERE id = ?")) {
-                    st2.setString(1, status);
-                    st2.setString(2, enrollmentId);
-                    if (st2.executeUpdate() == 0) {
-                        System.err.println("Could not find an enrollment with id: " + enrollmentId);
-                        return;
-                    }
-                    createNotification(conn, rs.getString("studentId"),
-                            "Your enrollment for " + courseRs.getString("name") + " has been "
-                                    + (status.equals("ACCEPTED") ? "accepted." : "rejected."));
+                    return;
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                conn.rollback();
-                return;
+                // TODO: abstract with one in createEnrollment
+                try (PreparedStatement courseSt = conn.prepareStatement(String.format("""
+                        SELECT
+                            Course.id AS id,
+                            Course.name AS name,
+                            Course.capacity AS capacity,
+                            COUNT(Enrollment.id) AS numberOfEnrollments
+                        FROM
+                            Course
+                            LEFT JOIN Enrollment
+                                ON Course.id = Enrollment.courseId
+                                AND Enrollment.status = 'ACCEPTED'
+                        WHERE
+                            Course.id = ?
+                            AND Course.status = 'ACCEPTED'
+                            AND Course.instructorId = ?
+                            %s
+                            %s
+                        GROUP BY Course.id""",
+                        status.equals("ACCEPTED")
+                                ? ("AND Course.startDate > " + (System.currentTimeMillis() / 1000L))
+                                : "",
+                        status.equals("ACCEPTED")
+                                ? "AND numberOfEnrollments < capacity"
+                                : ""))) {
+                    courseSt.setString(1, enrollmentRs.getString("courseId"));
+                    courseSt.setString(2, instructorId);
+                    ResultSet courseRs = courseSt.executeQuery();
+                    if (!courseRs.next())
+                        createNotification(conn, instructorId, invalid_enrollment);
+                    try (PreparedStatement updateSt = conn
+                            .prepareStatement("UPDATE Enrollment SET status = ? WHERE id = ?")) {
+                        updateSt.setString(1, status);
+                        updateSt.setString(2, enrollmentId);
+                        if (updateSt.executeUpdate() == 0) {
+                            System.err.println("Could not find an enrollment with id: " + enrollmentId);
+                            return;
+                        }
+                        createNotification(conn, enrollmentRs.getString("studentId"),
+                                "Your enrollment for " + courseRs.getString("name") + " has been "
+                                        + (status.equals("ACCEPTED") ? "accepted." : "rejected."));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    conn.rollback();
+                    throw e;
+                }
             }
         }
     }

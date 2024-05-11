@@ -225,7 +225,9 @@ public class Api {
                                         AVG(Review.stars) AS averageStars
                                         Course.status
                                     FROM Course
-                                        LEFT JOIN Enrollment ON Enrollment.courseId = Course.id AND Enrollment.status = 'ACCEPTED'
+                                        LEFT JOIN Enrollment
+                                            ON Enrollment.courseId = Course.id
+                                            AND Enrollment.status = 'ACCEPTED'
                                         LEFT JOIN Enrollment AS MyEnrollment
                                             ON MyEnrollment.id = Enrollment.id
                                             AND MyEnrollment.studentId = ?
@@ -254,7 +256,7 @@ public class Api {
                         capacity = rs.getInt("capacity");
                         numberOfEnrollments = rs.getInt("numberOfEnrollments");
                         numberOfReviews = rs.getInt("numberOfReviews");
-                        averageStars = rs.getInt("averageStars");
+                        averageStars = rs.getFloat("averageStars");
                         status = rs.getString("status");
                         enrolled = rs.getInt("enrolled") != 0;
                     }
@@ -507,7 +509,7 @@ public class Api {
                             name = rs.getString("courseName");
                             instructorId = rs.getObject("instructorId", UUID.class);
                             instructorName = iName;
-                            averageStars = rs.getInt("averageStars");
+                            averageStars = rs.getFloat("averageStars");
                             averageStars = averageStars == null ? 0 : averageStars;
                             numberOfReviews = rs.getInt("numberOfReviews");
                             numberOfEnrollments = rs.getInt("numberOfEnrollments");
@@ -771,7 +773,7 @@ class FullCourseResponse {
     public Integer capacity;
     public Integer numberOfEnrollments;
     public Integer numberOfReviews;
-    public Integer averageStars;
+    public Float averageStars;
     public String status;
     public Boolean enrolled;
 }
@@ -781,7 +783,7 @@ class CourseResponse {
     public String name;
     public UUID instructorId;
     public String instructorName;
-    public Integer averageStars;
+    public Float averageStars;
     public Integer numberOfReviews;
     public Integer numberOfEnrollments;
     public String category;

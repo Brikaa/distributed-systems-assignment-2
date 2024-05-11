@@ -45,6 +45,7 @@
   - Use remote ActiveMQ
   - Send notifications for runtime errors during asynchronous processing
   - Use SQL transactions in reviews
+  - ResultSet rs, if (rs.next()) -> if (st.executeQuery().next())
 
 - Assumptions
   - Instructors can create courses without approvals
@@ -85,3 +86,6 @@
   - Auth endpoint details
     - Takes basic auth token
     - Returns user info or 401
+
+- TODO
+  - test failure in MDB

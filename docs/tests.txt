@@ -82,4 +82,5 @@
   - Success
 - List courses
   - [i1c1, i2c1]
--
+- Enroll in i1c1
+  - Enrollment request sent
