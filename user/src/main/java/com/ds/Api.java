@@ -157,7 +157,7 @@ public class Api {
                 return Response.status(400).entity(new MessageResponse(err)).build();
             if ((err = getInvalidPasswordError(req.password)) != null)
                 return Response.status(400).entity(new MessageResponse(err)).build();
-            if (!req.role.equals(INSTRUCTOR_ROLE) || !req.role.equals(STUDENT_ROLE))
+            if (!req.role.equals(INSTRUCTOR_ROLE) && !req.role.equals(STUDENT_ROLE))
                 return Response.status(400).entity(new MessageResponse("Invalid role")).build();
             if (req.role.equals(INSTRUCTOR_ROLE) && (err = getInvalidExperienceError(req.experience)) != null)
                 return Response.status(400).entity(new MessageResponse(err)).build();
@@ -184,13 +184,13 @@ public class Api {
                 return Response.status(500).build();
             }
 
-            try (PreparedStatement st = conn.prepareStatement(
-                    "INSERT INTO AppUser (name, email, password, role, experience, bio, affiliation) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+            try (PreparedStatement st = conn.prepareStatement(String.format(
+                    "INSERT INTO AppUser (name, email, password, role, experience, bio, affiliation) VALUES (?, ?, ?, '%s', ?, ?, ?)",
+                    req.role))) {
                 int i = 1;
                 st.setString(i++, req.name);
                 st.setString(i++, req.email);
                 st.setString(i++, req.password);
-                st.setString(i++, req.role);
                 if (req.role.equals(INSTRUCTOR_ROLE))
                     st.setInt(i++, req.experience);
                 else
@@ -374,8 +374,7 @@ public class Api {
         if (role.equals(ADMIN_ROLE) && sourceId != targetId && req.role != null) {
             if (!req.role.equals(INSTRUCTOR_ROLE) || !req.role.equals(STUDENT_ROLE) || !req.role.equals(ADMIN_ROLE))
                 return Response.status(400).entity(new MessageResponse("Invalid role")).build();
-            updates.add("role = ?");
-            bindings.addLast((i, st) -> st.setString(i, req.role));
+            updates.add("role = '" + req.role + "'");
         }
 
         if ((role.equals(ADMIN_ROLE) || role.equals(INSTRUCTOR_ROLE)) && req.experience != null) {

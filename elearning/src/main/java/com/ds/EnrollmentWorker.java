@@ -22,6 +22,9 @@ public class EnrollmentWorker implements MessageListener {
     @EJB
     private ApiDataSource dataSource;
 
+    @EJB
+    private DateTimeService dateTimeService;
+
     private void createNotification(Connection conn, String userId, String body) throws SQLException {
         try (PreparedStatement st = conn
                 .prepareStatement("INSERT INTO Notification (userId, title, body, isRead) VALUES (?, ?, ?, ?)")) {
@@ -67,7 +70,7 @@ public class EnrollmentWorker implements MessageListener {
                         AND Course.status = 'ACCEPTED'
                         AND Course.startDate > %s
                         AND numberOfEnrollments < capacity
-                    GROUP BY Course.id""", System.currentTimeMillis() / 1000L))) {
+                    GROUP BY Course.id""", dateTimeService.getTimestamp() / 1000L))) {
                 st.setString(1, courseId);
                 ResultSet rs = st.executeQuery();
                 if (!rs.next())
@@ -130,7 +133,7 @@ public class EnrollmentWorker implements MessageListener {
                             %s
                         GROUP BY Course.id""",
                         status.equals("ACCEPTED")
-                                ? ("AND Course.startDate > " + (System.currentTimeMillis() / 1000L))
+                                ? ("AND Course.startDate > " + (dateTimeService.getTimestamp() / 1000L))
                                 : "",
                         status.equals("ACCEPTED")
                                 ? "AND numberOfEnrollments < capacity"

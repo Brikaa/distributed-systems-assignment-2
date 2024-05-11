@@ -103,13 +103,13 @@
 - List courses (validate info)
   - [i1c1, i2c1]
 - Enroll in i1c1
-  - Success (i1c1s1)
-- Enroll in i1c1
+  - Submitted
+- Enroll in i2c1
   - Submitted
 - Enroll in i1c1
   - Submitted
 - Check notifications
-  - [enrollment request was sent, already enrolled]
+  - [enrollment request was sent, enrollment request was sent, already enrolled]
 - Check unread notifications
   - Same notifications
 - Read notifications
@@ -151,8 +151,6 @@
   - Fail
 - Enroll in i1c1
   - Submitted
-- Enroll in i1c2
-  - Submitted
 - Read all notifications
   - Success
 
@@ -190,6 +188,7 @@
     - Number of pending courses: 1
     - Number of accepted enrollments: 2
     - Number of rejected enrollments: 1
+    - Number of pending enrollments: 1
 
 - Login student (s1, s1123)
   - List unread notifications

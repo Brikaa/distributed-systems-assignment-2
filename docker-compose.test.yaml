@@ -3,10 +3,6 @@ networks:
   user:
   elearning:
 
-volumes:
-  user-db:
-  elearning-db:
-
 services:
   user:
     build: user/
@@ -25,8 +21,6 @@ services:
     build: user-db/
     networks:
       - user
-    volumes:
-      - user-db:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD=user123
       - POSTGRES_USER=user
@@ -50,12 +44,11 @@ services:
       - DB_NAME=app
       - DB_HOST=elearning-db
       - USER_SERVICE_URL=http://user:8080/elearning-user
+      - FAKE_DATE=true
   elearning-db:
     build: elearning-db/
     networks:
       - elearning
-    volumes:
-      - elearning-db:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD=user123
       - POSTGRES_USER=user
@@ -65,3 +58,11 @@ services:
       interval: 3s
       timeout: 5s
       retries: 5
+  test:
+    build: tests/
+    profiles: [test]
+    networks:
+      - api
+    environment:
+      - USER_SERVICE_URL=http://user:8080/elearning-user
+      - ELEARNING_SERVICE_URL=http://elearning:8080/elearning

@@ -45,6 +45,9 @@ public class Api {
     @EJB
     private ApiClient apiClient;
 
+    @EJB
+    private DateTimeService dateTimeService;
+
     @Context
     private HttpServletRequest servletRequest;
 
@@ -125,7 +128,7 @@ public class Api {
     private String getInvalidCourseDatesError(Long startDate, Long endDate) {
         if (endDate < startDate)
             return "End date can't be before the start date";
-        if ((startDate * 1000) < System.currentTimeMillis())
+        if ((startDate * 1000) < dateTimeService.getTimestamp())
             return "Course can't start in the past";
         return null;
     }
@@ -404,7 +407,7 @@ public class Api {
                             AND Course.endDate <= %s
                             AND Course.status = 'ACCEPTED'
                             AND Enrollment.studentId = ?
-                            AND Enrollment.status = 'ACCEPTED'""", System.currentTimeMillis() / 1000L))) {
+                            AND Enrollment.status = 'ACCEPTED'""", dateTimeService.getTimestamp() / 1000L))) {
                     st.setObject(1, courseId);
                     st.setObject(2, studentId);
                     ResultSet rs = st.executeQuery();
@@ -656,7 +659,7 @@ public class Api {
         return withRole(STUDENT_ROLE, (ctx) -> {
             String dateFilter = "";
             if (isPast != null) {
-                long currentDate = System.currentTimeMillis() / 1000L;
+                long currentDate = dateTimeService.getTimestamp() / 1000L;
                 dateFilter = isPast ? " AND Course.endDate <= " + currentDate : "AND Course.endDate > " + currentDate;
             }
             try (Connection conn = dataSource.getInstance().getConnection();
@@ -720,6 +723,7 @@ public class Api {
 
                 Integer noAcceptedEnrollments = 0;
                 Integer noRejectedEnrollments = 0;
+                Integer noPendingEnrollments = 0;
                 try (PreparedStatement st = conn
                         .prepareStatement("SELECT count(id) AS count, status FROM Enrollment GROUP BY status")) {
                     ResultSet rs = st.executeQuery();
@@ -730,6 +734,9 @@ public class Api {
                             noAcceptedEnrollments = count;
                         else if (status.equals("REJECTED"))
                             noRejectedEnrollments = count;
+                        else if (status.equals("PENDING"))
+                            noPendingEnrollments = count;
+
                     }
                 }
 
@@ -737,6 +744,7 @@ public class Api {
                 final int nPendingCourses = noPendingCourses;
                 final int nAcceptedEnrollments = noAcceptedEnrollments;
                 final int nRejectedEnrollments = noRejectedEnrollments;
+                final int nPendingEnrollments = noPendingEnrollments;
                 return Response.status(200).entity(new UsageResponse() {
                     {
                         numberOfStudents = userCountResponse.numberOfStudents;
@@ -746,10 +754,20 @@ public class Api {
                         numberOfPendingCourses = nPendingCourses;
                         numberOfAcceptedEnrollments = nAcceptedEnrollments;
                         numberOfRejectedEnrollments = nRejectedEnrollments;
+                        numberOfPendingEnrollments = nPendingEnrollments;
                     }
                 }).build();
             }
         });
+    }
+
+    @POST
+    @Path("/date")
+    public Response setDate(DateChangeRequest req) {
+        if (!dateTimeService.getShouldFake())
+            return Response.status(404).build();
+        dateTimeService.setTimestamp(req.date);
+        return Response.status(200).build();
     }
 }
 
@@ -761,6 +779,7 @@ class UsageResponse {
     public Integer numberOfPendingCourses;
     public Integer numberOfAcceptedEnrollments;
     public Integer numberOfRejectedEnrollments;
+    public Integer numberOfPendingEnrollments;
 }
 
 class FullCourseResponse {

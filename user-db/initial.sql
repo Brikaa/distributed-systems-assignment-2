@@ -13,6 +13,4 @@ CREATE TABLE AppUser (
     affiliation varchar(255) NOT NULL
 );
 
-INSERT INTO
-    AppUser(name, email, password, role, experience, bio)
-    VALUES ('admin', 'admin@admin.com', 'admin', 'ADMIN', 0, 'This is an admin account');
+INSERT INTO AppUser(name, email, password, role, experience, bio, affiliation) VALUES ('admin', 'admin@admin.com', 'admin', 'ADMIN', 0, 'This is an admin account', 'Admin university');

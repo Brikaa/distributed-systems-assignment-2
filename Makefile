@@ -13,3 +13,12 @@ logs:
 
 migrate:
 	docker compose down -t 1 -v
+
+test:
+	docker compose -f docker-compose.test.yaml up -t 1 -d --build
+	sleep 7
+	docker compose -f docker-compose.test.yaml --profile test up -t 1 -d --build
+	docker compose -f docker-compose.test.yaml logs -f test
+
+stop-test:
+	docker compose -f docker-compose.test.yaml --profile test down -t 1

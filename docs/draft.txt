@@ -59,6 +59,7 @@
     - Number of courses
     - Number of 'ACCEPTED' enrollments
     - Number of 'REJECTED' enrollments
+  - Users can only review the courses that have ended and they had an accepted enrollment in
 
 - Splitting into microservices
   - Possible microservices
