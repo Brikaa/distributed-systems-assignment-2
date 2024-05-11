@@ -389,8 +389,8 @@ public class Api {
             if (req.stars == null)
                 return Response.status(400).entity(new MessageResponse("Empty body")).build();
 
-            if (req.stars < 1 || req.stars > 5)
-                return Response.status(400).entity(new MessageResponse("Stars must be between 1 and 5")).build();
+            if (req.stars < 0 || req.stars > 5)
+                return Response.status(400).entity(new MessageResponse("Stars must be between 0 and 5")).build();
 
             UUID studentId = ctx.id;
 
@@ -473,11 +473,11 @@ public class Api {
                 where.add("Course.status = 'ACCEPTED'");
             if (name != null) {
                 where.add("LOWER(Course.name) LIKE LOWER(?)");
-                bindings.addLast((i, st) -> st.setString(i, escapeLikeString(name)));
+                bindings.addLast((i, st) -> st.setString(i, escapeLikeString("%" + name + "%")));
             }
             if (category != null) {
                 where.add("LOWER(Course.category) LIKE LOWER(?)");
-                bindings.addLast((i, st) -> st.setString(i, escapeLikeString(category)));
+                bindings.addLast((i, st) -> st.setString(i, escapeLikeString("%" + category + "%")));
             }
             if (instructorWantsTheirCourses) {
                 where.add("Instructor.id = ?");

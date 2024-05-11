@@ -58,9 +58,9 @@
   - Fail, can't start in past
 - Create course (name: i1c2, description: i1c2d, start: after two week, end: next week, category: 'Machine learning')
   - Fail, can't end before starting
-- Create course (name: i1c1, description: i1c1d, start: next week, end: after two weeks, category: 'Machine learning',    capacity: -300)
+- Create course (name: i1c2, description: i1c1d, start: next week, end: after two weeks, category: 'Machine learning',    capacity: -300)
   - Fail, capacity can't be negative
-- Create course (name: i1c1, description: i1c1d, start: next week, end: after two weeks, category: 'Machine learning',    capacity: 0)
+- Create course (name: i1c2, description: i1c1d, start: next week, end: after two weeks, category: 'Machine learning',    capacity: 0)
   - Fail, capacity can't be zero
 
 - Register instructor (name: i2, email: i2@i2.com, password: i2123, affiliation: cu, experience: 8, bio: 'this is another instructor', role: instructor)
@@ -68,19 +68,39 @@
 - Login instructor (i2, i2123)
   - Success
 - List courses
-  - [i1c1]
+  - []
 - List my courses
   - []
 - Create course (name: i2c1, description: i2c1d, start: next week, end: after two weeks, category: 'Distributed systems', capacity: 200)
   - Success
+- Create course (name: i2c2, description: i2c2d, start: next week, end: after three weeks, category: 'Soft computing', capacity: 5000)
+  - Success
+- Create course (name: i2c3, description: i2c3d, start: next week, end: after a month, category: 'Web engineering', capacity: 50)
+  - Success
 - List courses
-  - [i1c1, i2c1]
+  - [i2c1, i2c2]
 - List my courses
-  - [i2c1]
+  - [i2c1, i2c2]
 
 - Login student (s1, s1123)
   - Success
 - List courses
+  - []
+
+- Login admin (admin, admin)
+  - Success
+- List courses
+  - [i1c1, i2c1]
+- Accept i1c1 and change its description to i1c1dd
+  - Success
+- Accept i2c1
+  - Success
+- Delete i2c2
+  - Success
+
+- Login student (s1, s1123)
+  - Success
+- List courses (validate info)
   - [i1c1, i2c1]
 - Enroll in i1c1
   - Success (i1c1s1)
@@ -116,6 +136,15 @@
   - Success
 - List courses
   - [i1c1, i2c1]
+- Search courses by name (C)
+  - [i1c1, i2c1]
+- Search courses by name (2)
+  - [i2c1]
+- Search courses by category (S)
+  - i2c1
+  - i2c2
+- Search courses by category (dis)
+  - i2c1
 - Enroll in i1c1
   - Submitted
 - Enroll in i1c2
@@ -123,8 +152,16 @@
 - Read all notifications
   - Success
 
+- Login instructor(i2, i2123)
+  - View i2c1 enrollments
+    - [i2c1s3]
+
 - Login instructor (i1, i1123)
   - Success
+- View c1 enrollments
+  - [i1c1s1, i1c1s2]
+- View c2 enrollments
+  - Fail
 - Accept i1c1s1
   - Submitted
 - Accept i1c1s2
@@ -133,9 +170,22 @@
   - Submitted
 - Reject i1c1s3
   - Submitted
-- Accept i1c2s3
+- Accept i2c1s3
   - Submitted
 - Check notifications
-  - [Could not accept i1c1s3, could not accept i1c2s3]
+  - [Could not reject i1c1s3 (second time), could not accept i2c1s3 (course doesn't belong to you)]
 - Read all notifications
   - Success
+
+- Login admin (admin, admin)
+  - Get usage
+    - Number of students: 3
+    - Number of instructors: 2
+    - Number of admins: 1
+    - Number of accepted courses: 2
+    - Number of pending courses: 1
+    - Number of accepted enrollments: 2
+    - Number of rejected enrollments: 1
+
+- TODO
+  - Admin manage user accounts

@@ -232,6 +232,21 @@ public class Api {
     }
 
     @GET
+    @Path("/users")
+    public Response getAllUser() throws SQLException {
+        return withRole(ADMIN_ROLE, (conn, _rs) -> {
+            ArrayList<UserResponse> users = new ArrayList<>();
+            try (PreparedStatement st = conn
+                    .prepareStatement("SELECT id, name, email, role, experience, bio, affiliation FROM AppUser")) {
+                ResultSet rs = st.executeQuery();
+                while (rs.next())
+                    users.add(getUserResponse(rs));
+            }
+            return Response.ok().entity(new UsersResponse(users)).build();
+        });
+    }
+
+    @GET
     @Path("/user/{id}")
     public Response getUser(@PathParam("id") UUID id) throws SQLException {
         return withRole(ADMIN_ROLE, (conn, _rs) -> {
@@ -452,6 +467,14 @@ class UserResponse {
     public Integer experience;
     public String bio;
     public String affiliation;
+}
+
+class UsersResponse {
+    public ArrayList<UserResponse> users;
+
+    public UsersResponse(ArrayList<UserResponse> users) {
+        this.users = users;
+    }
 }
 
 class InstructorResponse {
