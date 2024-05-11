@@ -34,42 +34,54 @@ public class EnrollmentWorker implements MessageListener {
     }
 
     private void createEnrollment(String studentId, String courseId) throws SQLException {
-        try (Connection conn = dataSource.getInstance().getConnection();
-                PreparedStatement st = conn.prepareStatement("""
-                        SELECT
-                            Course.id AS id,
-                            Course.name AS name,
-                            Course.capacity AS capacity,
-                            Course.startDate AS startDate,
-                            COUNT(Enrollment.id) AS numberOfEnrollments
-                        FROM
-                            Course
-                            LEFT JOIN Enrollment
-                                ON Course.id = Enrollment.courseId
-                                AND Enrollment.status = 'ACCEPTED'
-                        WHERE
-                            Course.id = ?
-                            AND Course.status = 'ACCEPTED'
-                        GROUP BY Course.id""")) {
-            st.setString(1, courseId);
-            ResultSet rs = st.executeQuery();
-            if (!rs.next())
-                createNotification(conn, studentId,
-                        "Can't enroll in course with id: " + courseId + " since it was not found.");
-            else if (rs.getInt("numberOfEnrollments") >= rs.getInt("capacity"))
-                createNotification(conn, studentId,
-                        "Can't enroll in '" + rs.getString("name") + "' since it is full");
-            else if (rs.getLong("startDate") * 1000 < System.currentTimeMillis())
-                createNotification(conn, studentId,
-                        "Can't enroll in '" + rs.getString("name") + "' since it has already started");
-            else {
-                try (PreparedStatement st2 = conn.prepareStatement(
-                        "INSERT INTO Enrollment (studentId, courseId, status) VALUES (?, ?, 'PENDING')")) {
-                    st2.setString(1, studentId);
-                    st2.setString(2, courseId);
-                    st2.executeUpdate();
-                    createNotification(conn, studentId, "Submitted an enrollment request for: '"
-                            + rs.getString("name") + "', we will get back to you once it is accepted.");
+        try (Connection conn = dataSource.getInstance().getConnection()) {
+            try (PreparedStatement st = conn
+                    .prepareStatement("SELECT id FROM enrollment WHERE studentId = ? AND courseId = ?")) {
+                st.setString(1, studentId);
+                st.setString(2, courseId);
+                ResultSet rs = st.executeQuery();
+                if (rs.next()) {
+                    createNotification(conn, studentId, "Can't enroll in course with id: " + courseId
+                            + " since you already had an enrollment request in it");
+                    return;
+                }
+            }
+            try (PreparedStatement st = conn.prepareStatement("""
+                    SELECT
+                        Course.id AS id,
+                        Course.name AS name,
+                        Course.capacity AS capacity,
+                        Course.startDate AS startDate,
+                        COUNT(Enrollment.id) AS numberOfEnrollments
+                    FROM
+                        Course
+                        LEFT JOIN Enrollment
+                            ON Course.id = Enrollment.courseId
+                            AND Enrollment.status = 'ACCEPTED'
+                    WHERE
+                        Course.id = ?
+                        AND Course.status = 'ACCEPTED'
+                    GROUP BY Course.id""")) {
+                st.setString(1, courseId);
+                ResultSet rs = st.executeQuery();
+                if (!rs.next())
+                    createNotification(conn, studentId,
+                            "Can't enroll in course with id: " + courseId + " since it was not found.");
+                else if (rs.getInt("numberOfEnrollments") >= rs.getInt("capacity"))
+                    createNotification(conn, studentId,
+                            "Can't enroll in '" + rs.getString("name") + "' since it is full");
+                else if (rs.getLong("startDate") * 1000 < System.currentTimeMillis())
+                    createNotification(conn, studentId,
+                            "Can't enroll in '" + rs.getString("name") + "' since it has already started");
+                else {
+                    try (PreparedStatement st2 = conn.prepareStatement(
+                            "INSERT INTO Enrollment (studentId, courseId, status) VALUES (?, ?, 'PENDING')")) {
+                        st2.setString(1, studentId);
+                        st2.setString(2, courseId);
+                        st2.executeUpdate();
+                        createNotification(conn, studentId, "Submitted an enrollment request for: '"
+                                + rs.getString("name") + "', we will get back to you once it is accepted.");
+                    }
                 }
             }
         }

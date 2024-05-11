@@ -44,7 +44,7 @@
   - Document that course startDate and endDate are in epoch seconds
   - Use remote ActiveMQ
   - Send notifications for runtime errors during asynchronous processing
-  - Use SQL transactions in enrollments
+  - Use SQL transactions in enrollments, registration
 
 - Assumptions
   - Instructors can create courses without approvals

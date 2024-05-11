@@ -1,6 +1,10 @@
 - Register Instructor (name: i1, email: i1@i1.com, password: i1123, affiliation: cu, experience: 13, bio: 'this is a cool instructor', role: instructor)
   - Success
 
+- Register Instructor (name: i1, email: x1@i1.com, password: i1123, affiliation: cu, experience: 13, bio: 'this is a cool instructor', role: instructor)
+  - Fail: name already exists
+- Register Instructor (name: x1, email: i1@i1.com, password: i1123, affiliation: cu, experience: 13, bio: 'this is a cool instructor', role: instructor)
+  - Fail: email already exists
 - Register Instructor (name: '', email: i1@i1.com, password: i1123, affiliation: cu, experience: 13, bio: 'this is a cool instructor', role: instructor)
   - Fail: name can't be empty
 - Register Instructor (name: i1, email: i1i1.com, password: i1123, affiliation: cu, experience: 13, bio: 'this is a cool instructor', role: instructor)
@@ -37,10 +41,29 @@
   - []
 - List my enrollments
   - []
+- Create course (name: i1c1, description: i1c1d, start: next week, end: after two weeks, category: 'Machine learning',    capacity: 300)
+  - Fail, unauthorized
 
+- Login instructor (i1, i1123)
+  - Success
+- List courses
+  - []
+- List my courses
+  - []
 - Create course (name: i1c1, description: i1c1d, start: next week, end: after two weeks, category: 'Machine learning',    capacity: 300)
   - Success
+- Create course (name: i1c2, description: i1c2d, start: previous week, end: after two weeks, category: 'Machine learning')
+  - Fail, can't start in past
+- Create course (name: i1c2, description: i1c2d, start: after two week, end: next week, category: 'Machine learning')
+  - Fail, can't end before starting
 
-- Create same course while not logged in
-  - Fail
-
+- Register instructor (name: i2, email: i2@i2.com, password: i2123, affiliation: cu, experience: 8, bio: 'this is another instructor', role: instructor)
+  - Success
+- Login instructor (i2, i2123)
+  - Success
+- List courses
+  - [i1c1]
+- List my courses
+  - []
+- Create course (name: i1c1, description: i1c1d, start: next week, end: after two weeks, category: 'Machine learning',    capacity: 300)
+  - Success

@@ -124,7 +124,7 @@ public class Api {
 
     private String getInvalidCourseDatesError(Long startDate, Long endDate) {
         if (endDate < startDate)
-            return "Start date can't be before the end date";
+            return "End date can't be before the start date";
         if ((startDate * 1000) < System.currentTimeMillis())
             return "Course can't start in the past";
         return null;

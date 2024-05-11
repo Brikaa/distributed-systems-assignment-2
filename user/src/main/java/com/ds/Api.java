@@ -162,23 +162,49 @@ public class Api {
                 return Response.status(400).entity(new MessageResponse(err)).build();
         }
 
-        try (Connection conn = dataSource.getInstance().getConnection();
-                PreparedStatement st = conn.prepareStatement(
-                        "INSERT INTO AppUser (name, email, password, role, experience, bio, affiliation) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
-            int i = 1;
-            st.setString(i++, req.name);
-            st.setString(i++, req.email);
-            st.setString(i++, req.password);
-            st.setString(i++, req.role);
-            if (req.role.equals(INSTRUCTOR_ROLE))
-                st.setInt(i++, req.experience);
-            else
-                st.setInt(i++, 0);
-            st.setString(i++, req.bio);
-            st.setString(i++, req.affiliation);
-            st.executeUpdate();
+        try (Connection conn = dataSource.getInstance().getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement st = conn
+                    .prepareStatement("SELECT id, email, name FROM AppUser where name = ? OR email = ?")) {
+                st.setString(1, req.name);
+                st.setString(2, req.email);
+                ResultSet rs = st.executeQuery();
+                if (rs.next()) {
+                    if (rs.getString("name").equals(req.name))
+                        return Response.status(400).entity(new MessageResponse("A user with this name already exists"))
+                                .build();
+                    if (rs.getString("email").equals(req.email))
+                        return Response.status(400).entity(new MessageResponse("A user with this email already exists"))
+                                .build();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                conn.rollback();
+                return Response.status(500).build();
+            }
+
+            try (PreparedStatement st = conn.prepareStatement(
+                    "INSERT INTO AppUser (name, email, password, role, experience, bio, affiliation) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+                int i = 1;
+                st.setString(i++, req.name);
+                st.setString(i++, req.email);
+                st.setString(i++, req.password);
+                st.setString(i++, req.role);
+                if (req.role.equals(INSTRUCTOR_ROLE))
+                    st.setInt(i++, req.experience);
+                else
+                    st.setInt(i++, 0);
+                st.setString(i++, req.bio);
+                st.setString(i++, req.affiliation);
+                st.executeUpdate();
+            } catch (Exception e) {
+                e.printStackTrace();
+                conn.rollback();
+                return Response.status(500).build();
+            }
+            conn.commit();
+            return Response.ok().build();
         }
-        return Response.ok().build();
     }
 
     private UserResponse getUserResponse(ResultSet rs) throws SQLException {

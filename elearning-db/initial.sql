@@ -35,5 +35,6 @@ CREATE TABLE Enrollment (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     studentId UUID NOT NULL,
     courseId UUID NOT NULL REFERENCES Course (id) ON DELETE CASCADE,
-    status enrollmentStatus NOT NULL
+    status enrollmentStatus NOT NULL,
+    UNIQUE (studentId, courseId)
 );
