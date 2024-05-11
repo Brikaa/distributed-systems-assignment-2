@@ -35,6 +35,7 @@ public class EnrollmentWorker implements MessageListener {
 
     private void createEnrollment(String studentId, String courseId) throws SQLException {
         try (Connection conn = dataSource.getInstance().getConnection()) {
+            conn.setAutoCommit(false);
             try (PreparedStatement st = conn
                     .prepareStatement("SELECT id FROM enrollment WHERE studentId = ? AND courseId = ?")) {
                 st.setString(1, studentId);
@@ -45,6 +46,10 @@ public class EnrollmentWorker implements MessageListener {
                             + " since you already had an enrollment request in it");
                     return;
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
+                conn.rollback();
+                return;
             }
             try (PreparedStatement st = conn.prepareStatement("""
                     SELECT
@@ -83,6 +88,11 @@ public class EnrollmentWorker implements MessageListener {
                                 + rs.getString("name") + "', we will get back to you once it is accepted.");
                     }
                 }
+                conn.commit();
+            } catch (Exception e) {
+                e.printStackTrace();
+                conn.rollback();
+                return;
             }
         }
     }
@@ -98,6 +108,7 @@ public class EnrollmentWorker implements MessageListener {
         try (Connection conn = dataSource.getInstance().getConnection();
                 PreparedStatement st = conn
                         .prepareStatement("SELECT courseId, status, studentId FROM Enrollment WHERE id = ?")) {
+            conn.setAutoCommit(false);
             st.setString(1, enrollmentId);
             ResultSet rs = st.executeQuery();
             if (!rs.next()) {
@@ -138,18 +149,22 @@ public class EnrollmentWorker implements MessageListener {
                     createNotification(conn, instructorId,
                             "Can't accept enrollment of id: " + enrollmentId + " since course '"
                                     + courseRs.getString("name") + "' has already started.");
-                else
+                try (PreparedStatement st2 = conn.prepareStatement("UPDATE Enrollment SET status = ? WHERE id = ?")) {
+                    st2.setString(1, status);
+                    st2.setString(2, enrollmentId);
+                    if (st2.executeUpdate() == 0) {
+                        System.err.println("Could not find an enrollment with id: " + enrollmentId);
+                        return;
+                    }
                     createNotification(conn, rs.getString("studentId"),
-                            "Your enrollment for '" + rs.getString("name") + " has been accepted.");
+                            "Your enrollment for " + courseRs.getString("name") + " has been "
+                                    + (status.equals("ACCEPTED") ? "accepted." : "rejected."));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                conn.rollback();
+                return;
             }
-        }
-        try (Connection conn = dataSource.getInstance().getConnection();
-                PreparedStatement st = conn.prepareStatement(
-                        "UPDATE Enrollment SET status = ? WHERE id = ?")) {
-            st.setString(1, status);
-            st.setString(2, enrollmentId);
-            if (st.executeUpdate() == 0)
-                System.err.println("Could not find an enrollment with id: " + enrollmentId);
         }
     }
 

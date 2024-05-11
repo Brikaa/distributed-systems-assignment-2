@@ -39,7 +39,9 @@
   - name: s1, email: s1@s1.com, affiliation: cu, bio: 'this is a cool student', role: student
 - List courses
   - []
-- List my enrollments
+- List past enrollments
+  - []
+- List current enrollments
   - []
 - Create course (name: i1c1, description: i1c1d, start: next week, end: after two weeks, category: 'Machine learning',    capacity: 300)
   - Fail, unauthorized
@@ -56,6 +58,10 @@
   - Fail, can't start in past
 - Create course (name: i1c2, description: i1c2d, start: after two week, end: next week, category: 'Machine learning')
   - Fail, can't end before starting
+- Create course (name: i1c1, description: i1c1d, start: next week, end: after two weeks, category: 'Machine learning',    capacity: -300)
+  - Fail, capacity can't be negative
+- Create course (name: i1c1, description: i1c1d, start: next week, end: after two weeks, category: 'Machine learning',    capacity: 0)
+  - Fail, capacity can't be zero
 
 - Register instructor (name: i2, email: i2@i2.com, password: i2123, affiliation: cu, experience: 8, bio: 'this is another instructor', role: instructor)
   - Success
@@ -65,5 +71,15 @@
   - [i1c1]
 - List my courses
   - []
-- Create course (name: i1c1, description: i1c1d, start: next week, end: after two weeks, category: 'Machine learning',    capacity: 300)
+- Create course (name: i2c1, description: i2c1d, start: next week, end: after two weeks, category: 'Distributed systems', capacity: 300)
   - Success
+- List courses
+  - [i1c1, i2c1]
+- List my courses
+  - [i2c1]
+
+- Login student (s1, s1123)
+  - Success
+- List courses
+  - [i1c1, i2c1]
+-
