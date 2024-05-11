@@ -145,6 +145,10 @@
   - i2c2
 - Search courses by category (dis)
   - i2c1
+- View details of i2c1
+  - name: i2c1, description: i2c1d, start: next week, end: after two weeks, category: 'Distributed systems', capacity: 200
+- View details of i2c3
+  - Fail
 - Enroll in i1c1
   - Submitted
 - Enroll in i1c2
@@ -158,9 +162,9 @@
 
 - Login instructor (i1, i1123)
   - Success
-- View c1 enrollments
+- View i1c1 enrollments
   - [i1c1s1, i1c1s2]
-- View c2 enrollments
+- View i2c1 enrollments
   - Fail
 - Accept i1c1s1
   - Submitted
@@ -187,5 +191,45 @@
     - Number of accepted enrollments: 2
     - Number of rejected enrollments: 1
 
-- TODO
-  - Admin manage user accounts
+- Login student (s1, s1123)
+  - List unread notifications
+    - [i1c1s1 accepted]
+  - Read all notifications
+  - Submit review i1c1 (stars: 5, body: 'Nice course')
+    - Fail
+  - Submit review i2c1 (stars: 5, body: 'Nice course')
+    - Fail
+  - List current enrollments
+    - [i1c1s1]
+  - List past enrollments
+    - []
+  - Travel in time next week + 1 day
+  - List current enrollments
+    - [i1c1s1]
+  - List past enrollments
+    - []
+  - Submit review i1c1 (stars: 5, body: 'Nice course')
+    - Fail
+  - Travel in time next year
+  - List current enrollments
+    - []
+  - List past enrollments
+    - [i1c1s1]
+  - Submit review i1c1 (stars: 5, body: 'Nice course')
+    - Success
+  - Submit review i1c1 (stars: 5, body: 'Nice course')
+    - Fail
+  - Submit review i2c1 (stars: 5, body: 'Nice course')
+    - Fail
+
+- Login student (s2, s2123)
+  - Success
+- Submit review i1c1 (stars: 0)
+  - Success
+
+- Login student (s3, s3123)
+  - Success
+- List courses ordered by reviews
+  - [i1c1 (2.5), i2c1 (0)]
+- List i1c1 reviews
+  - [(stars: 5, body: 'Nice course'), (stars: 0, body: '')]

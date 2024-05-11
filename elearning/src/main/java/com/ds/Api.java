@@ -464,7 +464,8 @@ public class Api {
                         Course.status
                     FROM Course
                         LEFT JOIN Enrollment ON Enrollment.id = Course.enrollmentId AND Enrollment.status = 'ACCEPTED'
-                        LEFT JOIN Review ON Review.courseId = Course.id""");
+                        LEFT JOIN Review ON Review.courseId = Course.id
+                    ORDER BY Course.name DESC""");
             ArrayList<String> where = new ArrayList<>();
             LinkedList<Binding> bindings = new LinkedList<>();
             String role = ctx.role;
