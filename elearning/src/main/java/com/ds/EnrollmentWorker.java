@@ -104,10 +104,10 @@ public class EnrollmentWorker implements MessageListener {
                     "SELECT courseId, status, studentId FROM Enrollment WHERE id = ? AND status = 'PENDING'")) {
                 enrollmentSt.setString(1, enrollmentId);
                 ResultSet enrollmentRs = enrollmentSt.executeQuery();
-                final String invalid_enrollment = "Could not find a pending enrollment with id: " + enrollmentId
+                final String invalidEnrollment = "Could not find a pending enrollment with id: " + enrollmentId
                         + " that was sent to one of your non-full courses";
                 if (!enrollmentRs.next()) {
-                    createNotification(conn, instructorId, invalid_enrollment);
+                    createNotification(conn, instructorId, invalidEnrollment);
                     return;
                 }
                 // TODO: abstract with one in createEnrollment
@@ -139,7 +139,7 @@ public class EnrollmentWorker implements MessageListener {
                     courseSt.setString(2, instructorId);
                     ResultSet courseRs = courseSt.executeQuery();
                     if (!courseRs.next())
-                        createNotification(conn, instructorId, invalid_enrollment);
+                        createNotification(conn, instructorId, invalidEnrollment);
                     try (PreparedStatement updateSt = conn
                             .prepareStatement("UPDATE Enrollment SET status = ? WHERE id = ?")) {
                         updateSt.setString(1, status);

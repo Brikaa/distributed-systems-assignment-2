@@ -141,7 +141,8 @@ public class Api {
     @POST
     @Path("/register")
     public Response register(UserUpdateRequest req) throws SQLException {
-        if (req.name == null || req.email == null || req.password == null || req.role == null || req.experience == null
+        if (req.name == null || req.email == null || req.password == null || req.role == null
+                || (req.role.equals(INSTRUCTOR_ROLE) && req.experience == null)
                 || req.bio == null || req.affiliation == null) {
             return Response.status(400).entity(new MessageResponse("Incomplete body")).build();
         }

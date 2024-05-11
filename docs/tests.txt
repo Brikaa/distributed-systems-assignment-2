@@ -31,7 +31,7 @@
 - View user
   - name: i1, email: i1@i1.com, affiliation: cu, experience: 13, bio: 'this is a cool instructor', role: instructor
 
-- Create student: (name: s1, email: s1@s1.com, password: s1123, affiliation: cu, experience: 13, bio: 'this is a cool student', role: student)
+- Register student: (name: s1, email: s1@s1.com, password: s1123, affiliation: cu, experience: 13, bio: 'this is a cool student', role: student)
   - Success
 - Login student (s1, s1123)
   - Success
@@ -71,7 +71,7 @@
   - [i1c1]
 - List my courses
   - []
-- Create course (name: i2c1, description: i2c1d, start: next week, end: after two weeks, category: 'Distributed systems', capacity: 300)
+- Create course (name: i2c1, description: i2c1d, start: next week, end: after two weeks, category: 'Distributed systems', capacity: 200)
   - Success
 - List courses
   - [i1c1, i2c1]
@@ -83,4 +83,59 @@
 - List courses
   - [i1c1, i2c1]
 - Enroll in i1c1
-  - Enrollment request sent
+  - Success (i1c1s1)
+- Enroll in i1c1
+  - Submitted
+- Enroll in i1c1
+  - Submitted
+- Check notifications
+  - [enrollment request was sent, already enrolled]
+- Check unread notifications
+  - Same notifications
+- Read notifications
+  - Success
+- Check notifications
+  - Same notifications
+- Check unread notifications
+  - []
+
+- Register student: (name: s2, email: s2@s2.com, password: s2123, affiliation: cu, bio: 'this is another student', role: student)
+  - Success
+- Login student (s2, s2123)
+  - Success
+- List courses
+  - [i1c1, i2c1]
+- Enroll in i1c1
+  - Submitted
+- Read all notifications
+  - Success
+
+- Register student: (name: s3, email: s3@s3.com, password: s3123, affiliation: cu, bio: 'yet another student', role: student)
+  - Success
+- Login student (s3, s3123)
+  - Success
+- List courses
+  - [i1c1, i2c1]
+- Enroll in i1c1
+  - Submitted
+- Enroll in i1c2
+  - Submitted
+- Read all notifications
+  - Success
+
+- Login instructor (i1, i1123)
+  - Success
+- Accept i1c1s1
+  - Submitted
+- Accept i1c1s2
+  - Submitted
+- Reject i1c1s3
+  - Submitted
+- Reject i1c1s3
+  - Submitted
+- Accept i1c2s3
+  - Submitted
+- Check notifications
+  - [Could not accept i1c1s3, could not accept i1c2s3]
+- Read all notifications
+  - Success
