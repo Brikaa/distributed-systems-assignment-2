@@ -100,8 +100,10 @@
 
 - Login student (s1, s1123)
   - Success
-- List courses (validate info)
+- List courses
   - [i1c1, i2c1]
+- View course i1c1
+  - same info, new description
 - Enroll in i1c1
   - Submitted
 - Enroll in i2c1

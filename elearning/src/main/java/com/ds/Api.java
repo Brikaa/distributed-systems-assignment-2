@@ -228,8 +228,9 @@ public class Api {
                                         Course.startDate,
                                         Course.endDate,
                                         Count(Enrollment.id) AS numberOfEnrollments,
-                                        Count(MyEnrollment.id) AS enrolled
-                                        AVG(Review.stars) AS averageStars
+                                        Count(MyEnrollment.id) AS enrolled,
+                                        AVG(Review.stars) AS averageStars,
+                                        COUNT(Review.id) AS numberOfReviews,
                                         Course.status
                                     FROM Course
                                         LEFT JOIN Enrollment
@@ -238,6 +239,7 @@ public class Api {
                                         LEFT JOIN Enrollment AS MyEnrollment
                                             ON MyEnrollment.id = Enrollment.id
                                             AND MyEnrollment.studentId = ?
+                                        LEFT JOIN Review ON Review.courseId = Course.id
                                     WHERE
                                         Course.id = ?
                                         %s
@@ -333,7 +335,6 @@ public class Api {
             if (isInstructor)
                 query.append(" AND instructorId = ?");
 
-            System.out.println("query: " + query);
             try (Connection conn = dataSource.getInstance().getConnection();
                     PreparedStatement st = conn.prepareStatement(query.toString())) {
                 int i = applyBindings(st, bindings);
@@ -381,7 +382,7 @@ public class Api {
                             }
                         });
                     }
-                    return Response.status(200).entity(new ReviewsResponse(reviews)).build();
+                    return Response.status(200).entity(reviews).build();
                 }
             }
         });
@@ -534,7 +535,7 @@ public class Api {
                         }
                     });
                 }
-                return Response.ok().entity(new CoursesResponse(courses)).build();
+                return Response.ok().entity(courses).build();
             }
         });
     }
@@ -542,14 +543,14 @@ public class Api {
     @GET
     @Path("/notification")
     public Response listNotifications(@QueryParam("read") Boolean isRead) throws SQLException {
-        return withRole("*", (_) -> {
+        return withRole("*", (ctx) -> {
             StringBuilder query = new StringBuilder(
                     "SELECT id, title, body, isRead FROM Notification WHERE userId = ?");
             if (isRead != null)
                 query.append(" AND isRead = " + (isRead ? "true" : "false"));
             try (Connection conn = dataSource.getInstance().getConnection();
                     PreparedStatement st = conn.prepareStatement(query.toString())) {
-                st.setObject(1, UUID.class);
+                st.setObject(1, ctx.id);
                 ResultSet rs = st.executeQuery();
                 ArrayList<NotificationResponse> notifications = new ArrayList<>();
                 while (rs.next()) {
@@ -562,7 +563,7 @@ public class Api {
                         }
                     });
                 }
-                return Response.status(200).entity(new NotificationsResponse(notifications)).build();
+                return Response.status(200).entity(notifications).build();
             }
         });
     }
@@ -656,7 +657,7 @@ public class Api {
                             }
                         });
                     }
-                    return Response.status(200).entity(new InstructorEnrollmentsResponse(enrollments)).build();
+                    return Response.status(200).entity(enrollments).build();
                 }
             }
         });
@@ -701,7 +702,7 @@ public class Api {
                         }
                     });
                 }
-                return Response.status(200).entity(new StudentEnrollmentsResponse(enrollments)).build();
+                return Response.status(200).entity(enrollments).build();
             }
         });
     }
@@ -822,27 +823,11 @@ class CourseResponse {
     public String status;
 }
 
-class CoursesResponse {
-    public ArrayList<CourseResponse> courses;
-
-    public CoursesResponse(ArrayList<CourseResponse> courses) {
-        this.courses = courses;
-    }
-}
-
 class NotificationResponse {
     public UUID id;
     public String title;
     public String body;
     public Boolean isRead;
-}
-
-class NotificationsResponse {
-    public ArrayList<NotificationResponse> notifications;
-
-    public NotificationsResponse(ArrayList<NotificationResponse> notifications) {
-        this.notifications = notifications;
-    }
 }
 
 class InstructorEnrollmentResponse {
@@ -852,14 +837,6 @@ class InstructorEnrollmentResponse {
     public String status;
 }
 
-class InstructorEnrollmentsResponse {
-    public ArrayList<InstructorEnrollmentResponse> enrollments;
-
-    public InstructorEnrollmentsResponse(ArrayList<InstructorEnrollmentResponse> enrollments) {
-        this.enrollments = enrollments;
-    }
-}
-
 class StudentEnrollmentResponse {
     public UUID id;
     public UUID courseId;
@@ -867,14 +844,6 @@ class StudentEnrollmentResponse {
     public Long courseStartDate;
     public Long courseEndDate;
     public String status;
-}
-
-class StudentEnrollmentsResponse {
-    public ArrayList<StudentEnrollmentResponse> enrollments;
-
-    public StudentEnrollmentsResponse(ArrayList<StudentEnrollmentResponse> enrollments) {
-        this.enrollments = enrollments;
-    }
 }
 
 class MessageResponse {
@@ -890,15 +859,6 @@ class ReviewResponse {
     String studentName;
     Integer stars;
     String body;
-}
-
-class ReviewsResponse {
-    public ArrayList<ReviewResponse> reviews;
-
-    public ReviewsResponse(ArrayList<ReviewResponse> reviews) {
-        this.reviews = reviews;
-    }
-
 }
 
 interface Binding {

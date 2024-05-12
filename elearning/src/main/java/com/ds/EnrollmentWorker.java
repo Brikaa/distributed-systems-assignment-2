@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.UUID;
 
 import jakarta.ejb.ActivationConfigProperty;
 import jakarta.ejb.EJB;
@@ -25,28 +26,28 @@ public class EnrollmentWorker implements MessageListener {
     @EJB
     private DateTimeService dateTimeService;
 
-    private void createNotification(Connection conn, String userId, String body) throws SQLException {
-        try (PreparedStatement st = conn
-                .prepareStatement("INSERT INTO Notification (userId, title, body, isRead) VALUES (?, ?, ?, ?)")) {
-            st.setString(1, userId);
-            st.setString(2, "Course enrollment status");
-            st.setString(3, body);
-            st.setBoolean(4, false);
+    private void createNotification(Connection conn, UUID userId, String body) throws SQLException {
+        try (PreparedStatement st = conn.prepareStatement(
+                "INSERT INTO Notification (userId, title, body, isRead) VALUES (?, 'Course enrollment status', ?, ?)")) {
+            st.setObject(1, userId);
+            st.setString(2, body);
+            st.setBoolean(3, false);
             st.executeUpdate();
         }
     }
 
-    private void createEnrollment(String studentId, String courseId) throws SQLException {
+    private void createEnrollment(UUID studentId, UUID courseId) throws SQLException {
         try (Connection conn = dataSource.getInstance().getConnection()) {
             conn.setAutoCommit(false);
             try (PreparedStatement st = conn
                     .prepareStatement("SELECT id FROM enrollment WHERE studentId = ? AND courseId = ?")) {
-                st.setString(1, studentId);
-                st.setString(2, courseId);
+                st.setObject(1, studentId);
+                st.setObject(2, courseId);
                 ResultSet rs = st.executeQuery();
                 if (rs.next()) {
                     createNotification(conn, studentId, "Can't enroll in course with id: " + courseId
-                            + " since you already had an enrollment request in it");
+                            + " since you already had an enrollment request in it.");
+                    conn.commit();
                     return;
                 }
             } catch (Exception e) {
@@ -69,18 +70,20 @@ public class EnrollmentWorker implements MessageListener {
                         Course.id = ?
                         AND Course.status = 'ACCEPTED'
                         AND Course.startDate > %s
-                        AND numberOfEnrollments < capacity
                     GROUP BY Course.id""", dateTimeService.getTimestamp() / 1000L))) {
-                st.setString(1, courseId);
+                st.setObject(1, courseId);
                 ResultSet rs = st.executeQuery();
                 if (!rs.next())
                     createNotification(conn, studentId, "Can't enroll in course with id: " + courseId
-                            + " since it was not found in future non-full courses.");
+                            + " since it was not found in future courses.");
+                else if (rs.getInt("capacity") <= rs.getInt("numberOfEnrollments"))
+                    createNotification(conn, studentId,
+                            "Can't enroll in course of id: " + courseId + " since it is full.");
                 else {
                     try (PreparedStatement st2 = conn.prepareStatement(
                             "INSERT INTO Enrollment (studentId, courseId, status) VALUES (?, ?, 'PENDING')")) {
-                        st2.setString(1, studentId);
-                        st2.setString(2, courseId);
+                        st2.setObject(1, studentId);
+                        st2.setObject(2, courseId);
                         st2.executeUpdate();
                         createNotification(conn, studentId, "Submitted an enrollment request for: '"
                                 + rs.getString("name") + "', we will get back to you once it is accepted.");
@@ -95,7 +98,7 @@ public class EnrollmentWorker implements MessageListener {
         }
     }
 
-    private void updateEnrollment(String instructorId, String enrollmentId, String status) throws SQLException {
+    private void updateEnrollment(UUID instructorId, UUID enrollmentId, String status) throws SQLException {
         if (status.equals("ACCEPTED") || status.equals("REJECTED")) {
             System.err.println("Received invalid status: " + status);
             return;
@@ -105,12 +108,13 @@ public class EnrollmentWorker implements MessageListener {
             conn.setAutoCommit(false);
             try (PreparedStatement enrollmentSt = conn.prepareStatement(
                     "SELECT courseId, status, studentId FROM Enrollment WHERE id = ? AND status = 'PENDING'")) {
-                enrollmentSt.setString(1, enrollmentId);
+                enrollmentSt.setObject(1, enrollmentId);
                 ResultSet enrollmentRs = enrollmentSt.executeQuery();
                 final String invalidEnrollment = "Could not find a pending enrollment with id: " + enrollmentId
-                        + " that was sent to one of your non-full courses";
+                        + " that was sent to one of your courses.";
                 if (!enrollmentRs.next()) {
                     createNotification(conn, instructorId, invalidEnrollment);
+                    conn.commit();
                     return;
                 }
                 // TODO: abstract with one in createEnrollment
@@ -130,30 +134,37 @@ public class EnrollmentWorker implements MessageListener {
                             AND Course.status = 'ACCEPTED'
                             AND Course.instructorId = ?
                             %s
-                            %s
                         GROUP BY Course.id""",
                         status.equals("ACCEPTED")
                                 ? ("AND Course.startDate > " + (dateTimeService.getTimestamp() / 1000L))
-                                : "",
-                        status.equals("ACCEPTED")
-                                ? "AND numberOfEnrollments < capacity"
                                 : ""))) {
-                    courseSt.setString(1, enrollmentRs.getString("courseId"));
-                    courseSt.setString(2, instructorId);
+                    courseSt.setObject(1, enrollmentRs.getObject("courseId", UUID.class));
+                    courseSt.setObject(2, instructorId);
                     ResultSet courseRs = courseSt.executeQuery();
-                    if (!courseRs.next())
+                    if (!courseRs.next()) {
                         createNotification(conn, instructorId, invalidEnrollment);
-                    try (PreparedStatement updateSt = conn
-                            .prepareStatement("UPDATE Enrollment SET status = ? WHERE id = ?")) {
-                        updateSt.setString(1, status);
-                        updateSt.setString(2, enrollmentId);
+                        conn.commit();
+                        return;
+                    }
+                    if (status.equals("ACCEPTED")
+                            && courseRs.getInt("capacity") <= courseRs.getInt("numberOfEnrollments")) {
+                        createNotification(conn, instructorId,
+                                "Can't accept enrollment of id: " + enrollmentId + " since the course is full.");
+                        conn.commit();
+                        return;
+                    }
+                    try (PreparedStatement updateSt = conn.prepareStatement(
+                            String.format("UPDATE Enrollment SET status = '%s' WHERE id = ?", status))) {
+                        updateSt.setObject(1, enrollmentId);
                         if (updateSt.executeUpdate() == 0) {
                             System.err.println("Could not find an enrollment with id: " + enrollmentId);
+                            conn.commit();
                             return;
                         }
-                        createNotification(conn, enrollmentRs.getString("studentId"),
+                        createNotification(conn, enrollmentRs.getObject("studentId", UUID.class),
                                 "Your enrollment for " + courseRs.getString("name") + " has been "
                                         + (status.equals("ACCEPTED") ? "accepted." : "rejected."));
+                        conn.commit();
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -164,15 +175,15 @@ public class EnrollmentWorker implements MessageListener {
         }
     }
 
-    private void deleteEnrollment(String studentId, String enrollmentId) throws SQLException {
+    private void deleteEnrollment(UUID studentId, UUID enrollmentId) throws SQLException {
         try (Connection conn = dataSource.getInstance().getConnection();
                 PreparedStatement st = conn.prepareStatement("DELETE FROM Enrollment WHERE id = ? AND studentId = ?")) {
-            st.setString(1, enrollmentId);
-            st.setString(2, studentId);
+            st.setObject(1, enrollmentId);
+            st.setObject(2, studentId);
             if (st.executeUpdate() == 0)
                 createNotification(conn, studentId,
-                        "Could not find an enrollment with id: " + enrollmentId + " in your enrollments");
-            createNotification(conn, studentId, "Enrollment of id: " + enrollmentId + " was cancelled");
+                        "Could not find an enrollment with id: " + enrollmentId + " in your enrollments.");
+            createNotification(conn, studentId, "Enrollment of id: " + enrollmentId + " was cancelled.");
         }
     }
 
@@ -200,11 +211,11 @@ public class EnrollmentWorker implements MessageListener {
             if (!isValidMessageBody(body))
                 System.err.println("Received invalid msg: " + txt);
             else if (op.equals("CREATE"))
-                createEnrollment(body[1], body[2]);
+                createEnrollment(UUID.fromString(body[1]), UUID.fromString(body[2]));
             else if (op.equals("UPDATE"))
-                updateEnrollment(body[1], body[2], body[3]);
+                updateEnrollment(UUID.fromString(body[1]), UUID.fromString(body[2]), body[3]);
             else if (op.equals("DELETE"))
-                deleteEnrollment(body[1], body[2]);
+                deleteEnrollment(UUID.fromString(body[1]), UUID.fromString(body[2]));
         } catch (JMSException e) {
             System.err.println("Error handling message:");
             e.printStackTrace();

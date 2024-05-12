@@ -242,7 +242,7 @@ public class Api {
                 while (rs.next())
                     users.add(getUserResponse(rs));
             }
-            return Response.ok().entity(new UsersResponse(users)).build();
+            return Response.ok().entity(users).build();
         });
     }
 
@@ -467,14 +467,6 @@ class UserResponse {
     public Integer experience;
     public String bio;
     public String affiliation;
-}
-
-class UsersResponse {
-    public ArrayList<UserResponse> users;
-
-    public UsersResponse(ArrayList<UserResponse> users) {
-        this.users = users;
-    }
 }
 
 class InstructorResponse {

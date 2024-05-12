@@ -245,7 +245,7 @@ const assert = require('assert');
     const text = await res.text();
     console.log(text);
     assert.equal(res.status, 200);
-    assert.deepStrictEqual(JSON.parse(text), { courses: [] });
+    assert.deepStrictEqual(JSON.parse(text), []);
   }
 
   {
@@ -254,7 +254,7 @@ const assert = require('assert');
     const text = await res.text();
     console.log(text);
     assert.equal(res.status, 200);
-    assert.deepStrictEqual(JSON.parse(text), { enrollments: [] });
+    assert.deepStrictEqual(JSON.parse(text), []);
   }
 
   {
@@ -263,7 +263,7 @@ const assert = require('assert');
     const text = await res.text();
     console.log(text);
     assert.equal(res.status, 200);
-    assert.deepStrictEqual(JSON.parse(text), { enrollments: [] });
+    assert.deepStrictEqual(JSON.parse(text), []);
   }
 
   {
@@ -272,7 +272,7 @@ const assert = require('assert');
     const text = await res.text();
     console.log(text);
     assert.equal(res.status, 200);
-    assert.deepStrictEqual(JSON.parse(text), { enrollments: [] });
+    assert.deepStrictEqual(JSON.parse(text), []);
   }
 
   {
@@ -297,7 +297,7 @@ const assert = require('assert');
     const text = await res.text();
     console.log(text);
     assert.equal(res.status, 200);
-    assert.deepStrictEqual(JSON.parse(text), { courses: [] });
+    assert.deepStrictEqual(JSON.parse(text), []);
   }
 
   {
@@ -306,7 +306,7 @@ const assert = require('assert');
     const text = await res.text();
     console.log(text);
     assert.equal(res.status, 200);
-    assert.deepStrictEqual(JSON.parse(text), { courses: [] });
+    assert.deepStrictEqual(JSON.parse(text), []);
   }
 
   let i1C1Start = currentTimeSeconds() + 7 * 24 * 60 * 60;
@@ -432,7 +432,7 @@ const assert = require('assert');
     const text = await res.text();
     console.log(text);
     assert.equal(res.status, 200);
-    assert.deepStrictEqual(JSON.parse(text), { courses: [] });
+    assert.deepStrictEqual(JSON.parse(text), []);
   }
 
   {
@@ -441,7 +441,7 @@ const assert = require('assert');
     const text = await res.text();
     console.log(text);
     assert.equal(res.status, 200);
-    assert.deepStrictEqual(JSON.parse(text), { courses: [] });
+    assert.deepStrictEqual(JSON.parse(text), []);
   }
 
   let i2C1Start = currentTimeSeconds() + 7 * 24 * 60 * 60;
@@ -499,50 +499,48 @@ const assert = require('assert');
     console.log(text);
     assert.equal(res.status, 200);
     const body = JSON.parse(text);
-    for (const course of body.courses) delete course.id;
-    assert.deepStrictEqual(body, {
-      courses: [
-        {
-          name: 'i2c3',
-          instructorId: i2Id,
-          instructorName: 'i2',
-          averageStars: 0,
-          numberOfReviews: 0,
-          numberOfEnrollments: 0,
-          category: 'Web engineering',
-          startDate: i2C3Start,
-          endDate: i2C3End,
-          capacity: 50,
-          status: 'PENDING'
-        },
-        {
-          name: 'i2c2',
-          instructorId: i2Id,
-          instructorName: 'i2',
-          averageStars: 0,
-          numberOfReviews: 0,
-          numberOfEnrollments: 0,
-          category: 'Soft computing',
-          startDate: i2C2Start,
-          endDate: i2C2End,
-          capacity: 5000,
-          status: 'PENDING'
-        },
-        {
-          name: 'i2c1',
-          instructorId: i2Id,
-          instructorName: 'i2',
-          averageStars: 0,
-          numberOfReviews: 0,
-          numberOfEnrollments: 0,
-          category: 'Distributed systems',
-          startDate: i2C1Start,
-          endDate: i2C1End,
-          capacity: 200,
-          status: 'PENDING'
-        }
-      ]
-    });
+    for (const course of body) delete course.id;
+    assert.deepStrictEqual(body, [
+      {
+        name: 'i2c3',
+        instructorId: i2Id,
+        instructorName: 'i2',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Web engineering',
+        startDate: i2C3Start,
+        endDate: i2C3End,
+        capacity: 50,
+        status: 'PENDING'
+      },
+      {
+        name: 'i2c2',
+        instructorId: i2Id,
+        instructorName: 'i2',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Soft computing',
+        startDate: i2C2Start,
+        endDate: i2C2End,
+        capacity: 5000,
+        status: 'PENDING'
+      },
+      {
+        name: 'i2c1',
+        instructorId: i2Id,
+        instructorName: 'i2',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Distributed systems',
+        startDate: i2C1Start,
+        endDate: i2C1End,
+        capacity: 200,
+        status: 'PENDING'
+      }
+    ]);
   }
 
   {
@@ -552,50 +550,48 @@ const assert = require('assert');
     console.log(text);
     assert.equal(res.status, 200);
     const body = JSON.parse(text);
-    for (const course of body.courses) delete course.id;
-    assert.deepStrictEqual(body, {
-      courses: [
-        {
-          name: 'i2c3',
-          instructorId: i2Id,
-          instructorName: 'i2',
-          averageStars: 0,
-          numberOfReviews: 0,
-          numberOfEnrollments: 0,
-          category: 'Web engineering',
-          startDate: i2C3Start,
-          endDate: i2C3End,
-          capacity: 50,
-          status: 'PENDING'
-        },
-        {
-          name: 'i2c2',
-          instructorId: i2Id,
-          instructorName: 'i2',
-          averageStars: 0,
-          numberOfReviews: 0,
-          numberOfEnrollments: 0,
-          category: 'Soft computing',
-          startDate: i2C2Start,
-          endDate: i2C2End,
-          capacity: 5000,
-          status: 'PENDING'
-        },
-        {
-          name: 'i2c1',
-          instructorId: i2Id,
-          instructorName: 'i2',
-          averageStars: 0,
-          numberOfReviews: 0,
-          numberOfEnrollments: 0,
-          category: 'Distributed systems',
-          startDate: i2C1Start,
-          endDate: i2C1End,
-          capacity: 200,
-          status: 'PENDING'
-        }
-      ]
-    });
+    for (const course of body) delete course.id;
+    assert.deepStrictEqual(body, [
+      {
+        name: 'i2c3',
+        instructorId: i2Id,
+        instructorName: 'i2',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Web engineering',
+        startDate: i2C3Start,
+        endDate: i2C3End,
+        capacity: 50,
+        status: 'PENDING'
+      },
+      {
+        name: 'i2c2',
+        instructorId: i2Id,
+        instructorName: 'i2',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Soft computing',
+        startDate: i2C2Start,
+        endDate: i2C2End,
+        capacity: 5000,
+        status: 'PENDING'
+      },
+      {
+        name: 'i2c1',
+        instructorId: i2Id,
+        instructorName: 'i2',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Distributed systems',
+        startDate: i2C1Start,
+        endDate: i2C1End,
+        capacity: 200,
+        status: 'PENDING'
+      }
+    ]);
   }
 
   await login('s1', 's1123');
@@ -606,7 +602,7 @@ const assert = require('assert');
     const text = await res.text();
     console.log(text);
     assert.equal(res.status, 200);
-    assert.deepStrictEqual(JSON.parse(text), { courses: [] });
+    assert.deepStrictEqual(JSON.parse(text), []);
   }
 
   await login('admin', 'admin');
@@ -621,7 +617,7 @@ const assert = require('assert');
     console.log(text);
     assert.equal(res.status, 200);
     const body = JSON.parse(text);
-    for (const course of body.courses) {
+    for (const course of body) {
       if (course.name === 'i1c1') {
         i1C1Id = course.id;
         console.log({ i1C1Id });
@@ -634,62 +630,60 @@ const assert = require('assert');
       }
       delete course.id;
     }
-    assert.deepStrictEqual(body, {
-      courses: [
-        {
-          name: 'i2c3',
-          instructorId: i2Id,
-          instructorName: 'i2',
-          averageStars: 0,
-          numberOfReviews: 0,
-          numberOfEnrollments: 0,
-          category: 'Web engineering',
-          startDate: i2C3Start,
-          endDate: i2C3End,
-          capacity: 50,
-          status: 'PENDING'
-        },
-        {
-          name: 'i2c2',
-          instructorId: i2Id,
-          instructorName: 'i2',
-          averageStars: 0,
-          numberOfReviews: 0,
-          numberOfEnrollments: 0,
-          category: 'Soft computing',
-          startDate: i2C2Start,
-          endDate: i2C2End,
-          capacity: 5000,
-          status: 'PENDING'
-        },
-        {
-          name: 'i2c1',
-          instructorId: i2Id,
-          instructorName: 'i2',
-          averageStars: 0,
-          numberOfReviews: 0,
-          numberOfEnrollments: 0,
-          category: 'Distributed systems',
-          startDate: i2C1Start,
-          endDate: i2C1End,
-          capacity: 200,
-          status: 'PENDING'
-        },
-        {
-          name: 'i1c1',
-          instructorId: i1Id,
-          instructorName: 'i1',
-          averageStars: 0,
-          numberOfReviews: 0,
-          numberOfEnrollments: 0,
-          category: 'Machine learning',
-          startDate: i1C1Start,
-          endDate: i1C1End,
-          capacity: 300,
-          status: 'PENDING'
-        }
-      ]
-    });
+    assert.deepStrictEqual(body, [
+      {
+        name: 'i2c3',
+        instructorId: i2Id,
+        instructorName: 'i2',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Web engineering',
+        startDate: i2C3Start,
+        endDate: i2C3End,
+        capacity: 50,
+        status: 'PENDING'
+      },
+      {
+        name: 'i2c2',
+        instructorId: i2Id,
+        instructorName: 'i2',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Soft computing',
+        startDate: i2C2Start,
+        endDate: i2C2End,
+        capacity: 5000,
+        status: 'PENDING'
+      },
+      {
+        name: 'i2c1',
+        instructorId: i2Id,
+        instructorName: 'i2',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Distributed systems',
+        startDate: i2C1Start,
+        endDate: i2C1End,
+        capacity: 200,
+        status: 'PENDING'
+      },
+      {
+        name: 'i1c1',
+        instructorId: i1Id,
+        instructorName: 'i1',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Machine learning',
+        startDate: i1C1Start,
+        endDate: i1C1End,
+        capacity: 300,
+        status: 'PENDING'
+      }
+    ]);
   }
 
   {
@@ -713,8 +707,128 @@ const assert = require('assert');
 
   {
     console.log('admin deletes i2c2');
-    const res = await sendRequest('DELETE', `${ELEARNING_SERVICE_URL}/course/${i2C1Id}`);
+    const res = await sendRequest('DELETE', `${ELEARNING_SERVICE_URL}/course/${i2C2Id}`);
     console.log(await res.text());
     assert.equal(res.status, 200);
+  }
+
+  await login('s1', 's1123');
+
+  {
+    console.log('s1 views available courses');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    for (const course of body) delete course.id;
+    assert.deepStrictEqual(body, [
+      {
+        name: 'i2c1',
+        instructorId: i2Id,
+        instructorName: 'i2',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Distributed systems',
+        startDate: i2C1Start,
+        endDate: i2C1End,
+        capacity: 200,
+        status: 'ACCEPTED'
+      },
+      {
+        name: 'i1c1',
+        instructorId: i1Id,
+        instructorName: 'i1',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Machine learning',
+        startDate: i1C1Start,
+        endDate: i1C1End,
+        capacity: 300,
+        status: 'ACCEPTED'
+      }
+    ]);
+  }
+
+  {
+    console.log('s1 views i1c1');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    assert.deepStrictEqual(body, {
+      id: i1C1Id,
+      name: 'i1c1',
+      category: 'Machine learning',
+      description: 'i1c1dd',
+      instructorId: i1Id,
+      startDate: i1C1Start,
+      endDate: i1C1End,
+      capacity: 300,
+      numberOfEnrollments: 0,
+      numberOfReviews: 0,
+      averageStars: 0,
+      status: 'ACCEPTED',
+      enrolled: false
+    });
+  }
+
+  {
+    console.log('s1 enrolls in i1c1');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/enrollment`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 202);
+  }
+
+  {
+    console.log('s1 enrolls in i2c1');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i2C1Id}/enrollment`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 202);
+  }
+
+  {
+    console.log('s1 tries to enroll in i1c1 again');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/enrollment`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 202);
+  }
+
+  {
+    console.log('s1 lists all notifications');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/notification`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    body.sort((a, b) => {
+      if (a.body === b.body) return 0;
+      if (a.body < b.body) return -1;
+      if (a.body > b.body) return 1;
+    });
+    body.forEach((notification) => delete notification.id);
+    assert.deepStrictEqual(body, [
+      {
+        title: 'Course enrollment status',
+        body: `Can't enroll in course with id: ${i1C1Id} since you already had an enrollment request in it.`,
+        isRead: false
+      },
+      {
+        title: 'Course enrollment status',
+        body: "Submitted an enrollment request for: 'i1c1', we will get back to you once it is accepted.",
+        isRead: false
+      },
+      {
+        title: 'Course enrollment status',
+        body: "Submitted an enrollment request for: 'i2c1', we will get back to you once it is accepted.",
+        isRead: false
+      },
+    ]);
   }
 })();
