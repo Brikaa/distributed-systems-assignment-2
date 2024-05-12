@@ -90,7 +90,7 @@
 - Login admin (admin, admin)
   - Success
 - List courses
-  - [i1c1, i2c1]
+  - [i1c1, i2c1, i2c2, i2c3]
 - Accept i1c1 and change its description to i1c1dd
   - Success
 - Accept i2c1
@@ -109,7 +109,7 @@
 - Enroll in i1c1
   - Submitted
 - Check notifications
-  - [enrollment request was sent, enrollment request was sent, already enrolled]
+  - [enrollment request was sent, enrollment request was sent, already have an enrollment request]
 - Check unread notifications
   - Same notifications
 - Read notifications
@@ -118,6 +118,8 @@
   - Same notifications
 - Check unread notifications
   - []
+- List current enrollments
+  - [i1c1s1, i2c1s1]
 
 - Register student: (name: s2, email: s2@s2.com, password: s2123, affiliation: cu, bio: 'this is another student', role: student)
   - Success
@@ -156,7 +158,7 @@
 
 - Login instructor(i2, i2123)
   - View i2c1 enrollments
-    - [i2c1s3]
+    - [i2c1s1]
 
 - Login instructor (i1, i1123)
   - Success
@@ -172,59 +174,92 @@
   - Submitted
 - Reject i1c1s3
   - Submitted
-- Accept i2c1s3
+- Accept i2c1s1
   - Submitted
 - Check notifications
-  - [Could not reject i1c1s3 (second time), could not accept i2c1s3 (course doesn't belong to you)]
+  - [Could not reject i1c1s3 (second time), could not accept i2c1s1 (course doesn't belong to you)]
 - Read all notifications
   - Success
 
 - Login admin (admin, admin)
-  - Get usage
-    - Number of students: 3
-    - Number of instructors: 2
-    - Number of admins: 1
-    - Number of accepted courses: 2
-    - Number of pending courses: 1
-    - Number of accepted enrollments: 2
-    - Number of rejected enrollments: 1
-    - Number of pending enrollments: 1
+  - Success
+- Get usage
+  - Number of students: 3
+  - Number of instructors: 2
+  - Number of admins: 1
+  - Number of accepted courses: 2
+  - Number of pending courses: 1
+  - Number of accepted enrollments: 2
+  - Number of rejected enrollments: 1
+  - Number of pending enrollments: 1
 
 - Login student (s1, s1123)
-  - List unread notifications
-    - [i1c1s1 accepted]
-  - Read all notifications
-  - Submit review i1c1 (stars: 5, body: 'Nice course')
-    - Fail
-  - Submit review i2c1 (stars: 5, body: 'Nice course')
-    - Fail
-  - List current enrollments
-    - [i1c1s1]
-  - List past enrollments
-    - []
-  - Travel in time next week + 1 day
-  - List current enrollments
-    - [i1c1s1]
-  - List past enrollments
-    - []
-  - Submit review i1c1 (stars: 5, body: 'Nice course')
-    - Fail
-  - Travel in time next year
-  - List current enrollments
-    - []
-  - List past enrollments
-    - [i1c1s1]
-  - Submit review i1c1 (stars: 5, body: 'Nice course')
-    - Success
-  - Submit review i1c1 (stars: 5, body: 'Nice course')
-    - Fail
-  - Submit review i2c1 (stars: 5, body: 'Nice course')
-    - Fail
+  - Success
+- List unread notifications
+  - [i1c1s1 accepted]
+- Read all notifications
+  - Success
+- Submit review i1c1 (stars: 5, body: 'Nice course')
+  - Fail
+- Submit review i2c1 (stars: 5, body: 'Nice course')
+  - Fail
+- List current enrollments
+  - [i1c1s1, i2c1s1]
+- List past enrollments
+  - []
+- List all enrollments
+  - [i1c1s1, i2c1s1]
+- Cancel i2c1s1
+  - Submitted
+- List unread notifications
+  - [i2c1s1 cancelled]
+- Read all notifications
+  - Success
+
+- Login admin (admin, admin)
+  - Success
+- Get usage
+  - Number of students: 3
+  - Number of instructors: 2
+  - Number of admins: 1
+  - Number of accepted courses: 2
+  - Number of pending courses: 1
+  - Number of accepted enrollments: 2
+  - Number of rejected enrollments: 1
+  - Number of pending enrollments: 0
+
+- Login Student (s1, s1123)
+  - Success
+- Travel in time next week + 1 day
+- List current enrollments
+  - [i1c1s1]
+- List past enrollments
+  - []
+- Submit review i1c1 (stars: 5, body: 'Nice course')
+  - Fail
+- Travel in time next year
+- List current enrollments
+  - []
+- List past enrollments
+  - [i1c1s1]
+- List all enrollments
+  - [i1c1s1]
+- Submit review i1c1 (stars: 5, body: 'Nice course')
+  - Success
+- Submit review i1c1 (stars: 5, body: 'Nice course')
+  - Fail
+- Submit review i2c1 (stars: 5, body: 'Nice course')
+  - Fail
 
 - Login student (s2, s2123)
   - Success
 - Submit review i1c1 (stars: 0)
   - Success
+
+- Login student (s3, s3123)
+  - Success
+- Submit review i1c1 (stars: 0)
+  - Fail: you were not accepted
 
 - Login student (s3, s3123)
   - Success

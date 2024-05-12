@@ -90,12 +90,10 @@
     - Takes basic auth token
     - Returns user info or 401
 
-- TODO
-  - test failure in MDB
-
 - Test improvements
   - Test review is at proper time
+  - Test instructor search
+  - Test failure in MDB
 
 - Test todo
-  - Student cancel enrollment
   - Admin manage user accounts

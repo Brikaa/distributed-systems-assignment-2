@@ -172,6 +172,7 @@ public class EnrollmentWorker implements MessageListener {
             if (st.executeUpdate() == 0)
                 createNotification(conn, studentId,
                         "Could not find an enrollment with id: " + enrollmentId + " in your enrollments");
+            createNotification(conn, studentId, "Enrollment of id: " + enrollmentId + " was cancelled");
         }
     }
 

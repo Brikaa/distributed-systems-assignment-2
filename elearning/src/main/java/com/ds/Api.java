@@ -320,27 +320,27 @@ public class Api {
             if (req.status != null && role.equals(ADMIN_ROLE)) {
                 if (!req.status.equals("ACCEPTED") && !req.status.equals("PENDING"))
                     return Response.status(400).entity(new MessageResponse("Invalid status")).build();
-                updates.add("status = ?");
-                bindings.addLast((i, st) -> st.setString(i, req.status));
+                updates.add("status = '" + req.status + "'");
             }
 
             if (updates.isEmpty())
                 return Response.status(400).entity(new MessageResponse("Empty body")).build();
 
-            query.append(String.join(",", updates));
+            query.append(String.join(", ", updates));
             query.append(" WHERE id = ?");
 
             boolean isInstructor = role.equals(INSTRUCTOR_ROLE);
             if (isInstructor)
                 query.append(" AND instructorId = ?");
 
+            System.out.println("query: " + query);
             try (Connection conn = dataSource.getInstance().getConnection();
                     PreparedStatement st = conn.prepareStatement(query.toString())) {
                 int i = applyBindings(st, bindings);
                 st.setObject(i++, id);
                 if (isInstructor)
                     st.setObject(i++, ctx.id);
-                if (st.executeUpdate() != 0)
+                if (st.executeUpdate() == 0)
                     return Response.status(404).entity(new MessageResponse("Could not find the specified course"))
                             .build();
                 return Response.ok().build();
