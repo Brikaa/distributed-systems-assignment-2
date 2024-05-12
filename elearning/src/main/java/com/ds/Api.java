@@ -542,7 +542,7 @@ public class Api {
 
     @GET
     @Path("/notification")
-    public Response listNotifications(@QueryParam("read") Boolean isRead) throws SQLException {
+    public Response listNotifications(@QueryParam("isRead") Boolean isRead) throws SQLException {
         return withRole("*", (ctx) -> {
             StringBuilder query = new StringBuilder(
                     "SELECT id, title, body, isRead FROM Notification WHERE userId = ?");

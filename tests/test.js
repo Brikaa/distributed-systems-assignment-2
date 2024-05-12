@@ -33,6 +33,27 @@ const assert = require('assert');
 
   const currentTimeSeconds = () => Math.floor(Date.now() / 1000);
 
+  const markAllNotificationsAsRead = async () => {
+    const allNotificationsRes = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/notification`);
+    const text = await allNotificationsRes.text();
+    console.log(text);
+    assert.equal(allNotificationsRes.status, 200);
+    const allNotificationsBody = JSON.parse(text);
+    const ids = allNotificationsBody.map((notification) => notification.id);
+
+    await Promise.all(
+      ids.map(async (id) => {
+        console.log(`Marking ${id} as read`);
+        const res = await sendRequest('PUT', `${ELEARNING_SERVICE_URL}/notification/${id}`, {
+          isRead: true
+        });
+        const text = await res.text();
+        console.log(text);
+        assert.equal(res.status, 200);
+      })
+    );
+  };
+
   {
     console.log('Register Instructor');
     const res = await sendRequest('POST', `${USER_SERVICE_URL}/register`, {
@@ -800,6 +821,24 @@ const assert = require('assert');
     assert.equal(res.status, 202);
   }
 
+  const s1NotificationsAfterInitialEnrollments = [
+    {
+      title: 'Course enrollment status',
+      body: `Can't enroll in course with id: ${i1C1Id} since you already had an enrollment request in it.`,
+      isRead: false
+    },
+    {
+      title: 'Course enrollment status',
+      body: "Submitted an enrollment request for: 'i1c1', we will get back to you once it is accepted.",
+      isRead: false
+    },
+    {
+      title: 'Course enrollment status',
+      body: "Submitted an enrollment request for: 'i2c1', we will get back to you once it is accepted.",
+      isRead: false
+    }
+  ];
+
   {
     console.log('s1 lists all notifications');
     const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/notification`);
@@ -813,22 +852,106 @@ const assert = require('assert');
       if (a.body > b.body) return 1;
     });
     body.forEach((notification) => delete notification.id);
+    assert.deepStrictEqual(body, s1NotificationsAfterInitialEnrollments);
+  }
+
+  {
+    console.log('s1 lists unread notifications');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/notification?isRead=false`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    body.sort((a, b) => {
+      if (a.body === b.body) return 0;
+      if (a.body < b.body) return -1;
+      if (a.body > b.body) return 1;
+    });
+    body.forEach((notification) => delete notification.id);
+    assert.deepStrictEqual(body, s1NotificationsAfterInitialEnrollments);
+  }
+
+  await markAllNotificationsAsRead();
+  const s1NotificationsAfterInitialEnrollmentsRead = s1NotificationsAfterInitialEnrollments.map(
+    (n) => ({ ...n, isRead: true })
+  );
+
+  {
+    console.log('s1 lists all notifications');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/notification`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    body.sort((a, b) => {
+      if (a.body === b.body) return 0;
+      if (a.body < b.body) return -1;
+      if (a.body > b.body) return 1;
+    });
+    body.forEach((notification) => delete notification.id);
+    assert.deepStrictEqual(body, s1NotificationsAfterInitialEnrollmentsRead);
+  }
+
+  {
+    console.log('s1 lists unread notifications');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/notification?isRead=false`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    body.sort((a, b) => {
+      if (a.body === b.body) return 0;
+      if (a.body < b.body) return -1;
+      if (a.body > b.body) return 1;
+    });
+    body.forEach((notification) => delete notification.id);
+    assert.deepStrictEqual(body, []);
+  }
+
+  {
+    console.log('s1 lists read notifications');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/notification?isRead=true`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    body.sort((a, b) => {
+      if (a.body === b.body) return 0;
+      if (a.body < b.body) return -1;
+      if (a.body > b.body) return 1;
+    });
+    body.forEach((notification) => delete notification.id);
+    assert.deepStrictEqual(body, s1NotificationsAfterInitialEnrollmentsRead);
+  }
+
+  {
+    console.log('s1 lists current enrollments');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/enrollment?isPast=false`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    for (const enrollment of body) delete enrollment.id;
+    body.sort((a, b) => {
+      if (a.courseName === b.courseName) return 0;
+      if (a.courseName < b.courseName) return -1;
+      if (a.courseName > b.courseName) return 1;
+    });
     assert.deepStrictEqual(body, [
       {
-        title: 'Course enrollment status',
-        body: `Can't enroll in course with id: ${i1C1Id} since you already had an enrollment request in it.`,
-        isRead: false
+        courseId: i1C1Id,
+        courseName: 'i1c1',
+        courseStartDate: i1C1Start,
+        courseEndDate: i1C1End,
+        status: 'PENDING'
       },
       {
-        title: 'Course enrollment status',
-        body: "Submitted an enrollment request for: 'i1c1', we will get back to you once it is accepted.",
-        isRead: false
-      },
-      {
-        title: 'Course enrollment status',
-        body: "Submitted an enrollment request for: 'i2c1', we will get back to you once it is accepted.",
-        isRead: false
-      },
+        courseId: i2C1Id,
+        courseName: 'i2c1',
+        courseStartDate: i2C1Start,
+        courseEndDate: i2C1End,
+        status: 'PENDING'
+      }
     ]);
   }
 })();
