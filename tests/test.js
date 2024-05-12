@@ -827,6 +827,7 @@ const assert = require('assert');
     const text = await res.text();
     console.log(text);
     assert.equal(res.status, 202);
+    await sleep(10);
   }
 
   const s1NotificationsAfterInitialEnrollments = [
@@ -1381,6 +1382,47 @@ const assert = require('assert');
       if (a.body > b.body) return 1;
     });
     assert.deepStrictEqual(body, expected);
+  }
+
+  await markAllNotificationsAsRead();
+
+  await login('admin', 'admin');
+
+  {
+    console.log('admin gets platform usage');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/usage`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    assert.deepStrictEqual(JSON.parse(text), {
+      numberOfStudents: 3,
+      numberOfInstructors: 2,
+      numberOfAdmins: 1,
+      numberOfAcceptedCourses: 2,
+      numberOfPendingCourses: 1,
+      numberOfAcceptedEnrollments: 2,
+      numberOfRejectedEnrollments: 1,
+      numberOfPendingEnrollments: 1
+    });
+  }
+
+  await login('s1', 's1123');
+
+  {
+    console.log('s1 lists unread notifications');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/notification?isRead=false`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    body.forEach((notification) => delete notification.id);
+    assert.deepStrictEqual(body, [
+      {
+        title: 'Course enrollment status',
+        body: `Your enrollment for i1c1 has been accepted.`,
+        isRead: false
+      }
+    ]);
   }
 
   await markAllNotificationsAsRead();

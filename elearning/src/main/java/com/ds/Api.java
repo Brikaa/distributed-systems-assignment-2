@@ -717,7 +717,8 @@ public class Api {
             try (Connection conn = dataSource.getInstance().getConnection()) {
                 Integer noAcceptedCourses = 0;
                 Integer noPendingCourses = 0;
-                try (PreparedStatement st = conn.prepareStatement("SELECT count(id) AS count, status FROM Course")) {
+                try (PreparedStatement st = conn
+                        .prepareStatement("SELECT count(id) AS count, status FROM Course GROUP BY status")) {
                     ResultSet rs = st.executeQuery();
                     while (rs.next()) {
                         Integer count = rs.getInt("count");

@@ -93,6 +93,7 @@
 - Test improvements
   - Test instructor search
   - Test failure in MDB
+  - Mark all notifications as read: split into two functions, one of them takes ids only
 
 - Test todo
   - Admin manage user accounts
