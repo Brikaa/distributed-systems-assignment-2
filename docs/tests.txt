@@ -14,7 +14,7 @@
 - Register Instructor (name: i1, email: i1@i1.com, password: i1123, affiliation: '', experience: 13, bio: 'this is a cool instructor', role: instructor)
   - Fail: empty affiliation
 - Register Instructor (name: i1, email: i1@i1.com, password: i1123, affiliation: cu, experience: -13, bio: 'this is a cool instructor', role: instructor)
-  - Fail: negative affiliation
+  - Fail: negative experience
 - Register Instructor (name: i1, email: i1@i1.com, password: i1123, affiliation: cu, experience: 13, bio: 'this is a cool instructor', role: admin)
   - Fail: invalid role
 - Login instructor (i1, i123)
