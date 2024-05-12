@@ -75,12 +75,12 @@
   - Success
 - Create course (name: i2c2, description: i2c2d, start: next week, end: after three weeks, category: 'Soft computing', capacity: 5000)
   - Success
-- Create course (name: i2c3, description: i2c3d, start: next week, end: after a month, category: 'Web engineering', capacity: 50)
+- Create course (name: i2c3, description: i2c3d, start: next week, end: after a 30 days, category: 'Web engineering', capacity: 50)
   - Success
 - List courses
-  - [i2c1, i2c2]
+  - [i2c1, i2c2, i2c3]
 - List my courses
-  - [i2c1, i2c2]
+  - [i2c1, i2c2, i2c3]
 
 - Login student (s1, s1123)
   - Success

@@ -400,4 +400,196 @@ const assert = require('assert');
   }
 
   await login('i2', 'i2123');
+
+  let i2Id = undefined;
+  {
+    console.log('i1 views themselves');
+    const res = await sendRequest('GET', `${USER_SERVICE_URL}/user`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    i2Id = body.id;
+    delete body.id;
+    assert.deepStrictEqual(body, {
+      name: 'i2',
+      email: 'i2@i2.com',
+      role: 'INSTRUCTOR',
+      experience: 8,
+      bio: 'This is another instructor',
+      affiliation: 'cu'
+    });
+  }
+
+  {
+    console.log('i2 views available courses');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    assert.deepStrictEqual(JSON.parse(text), { courses: [] });
+  }
+
+  {
+    console.log('i2 views their courses');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course?mine=true`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    assert.deepStrictEqual(JSON.parse(text), { courses: [] });
+  }
+
+  let i2C1Start = currentTimeSeconds() + 7 * 24 * 60 * 60;
+  let i2C1End = currentTimeSeconds() + 7 * 24 * 60 * 60;
+  {
+    console.log('i2 creates a course (i2c1)');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course`, {
+      name: 'i2c1',
+      description: 'i2c1d',
+      startDate: i2C1Start,
+      endDate: i2C1End,
+      category: 'Distributed systems',
+      capacity: 200
+    });
+    console.log(await res.text());
+    assert.equal(res.status, 200);
+  }
+
+  let i2C2Start = currentTimeSeconds() + 7 * 24 * 60 * 60;
+  let i2C2End = currentTimeSeconds() + 21 * 24 * 60 * 60;
+  {
+    console.log('i2 creates a course (i2c2)');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course`, {
+      name: 'i2c2',
+      description: 'i2c2d',
+      startDate: i2C2Start,
+      endDate: i2C2End,
+      category: 'Soft computing',
+      capacity: 5000
+    });
+    console.log(await res.text());
+    assert.equal(res.status, 200);
+  }
+
+  let i2C3Start = currentTimeSeconds() + 7 * 24 * 60 * 60;
+  let i2C3End = currentTimeSeconds() + 30 * 24 * 60 * 60;
+  {
+    console.log('i2 creates a course (i2c3)');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course`, {
+      name: 'i2c3',
+      description: 'i2c3d',
+      startDate: i2C3Start,
+      endDate: i2C3End,
+      category: 'Web engineering',
+      capacity: 50
+    });
+    console.log(await res.text());
+    assert.equal(res.status, 200);
+  }
+
+  {
+    console.log('i2 views available courses');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    for (const course of body.courses) delete course.id;
+    assert.deepStrictEqual(body, {
+      courses: [
+        {
+          name: 'i2c3',
+          instructorId: i2Id,
+          instructorName: 'i2',
+          averageStars: 0,
+          numberOfReviews: 0,
+          numberOfEnrollments: 0,
+          category: 'Web engineering',
+          startDate: i2C3Start,
+          endDate: i2C3End,
+          capacity: 50,
+          status: 'PENDING'
+        },
+        {
+          name: 'i2c2',
+          instructorId: i2Id,
+          instructorName: 'i2',
+          averageStars: 0,
+          numberOfReviews: 0,
+          numberOfEnrollments: 0,
+          category: 'Soft computing',
+          startDate: i2C2Start,
+          endDate: i2C2End,
+          capacity: 5000,
+          status: 'PENDING'
+        },
+        {
+          name: 'i2c1',
+          instructorId: i2Id,
+          instructorName: 'i2',
+          averageStars: 0,
+          numberOfReviews: 0,
+          numberOfEnrollments: 0,
+          category: 'Distributed systems',
+          startDate: i2C1Start,
+          endDate: i2C1End,
+          capacity: 200,
+          status: 'PENDING'
+        }
+      ]
+    });
+  }
+
+  {
+    console.log('i2 views their courses');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course?mine=true`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    for (const course of body.courses) delete course.id;
+    assert.deepStrictEqual(body, {
+      courses: [
+        {
+          name: 'i2c3',
+          instructorId: i2Id,
+          instructorName: 'i2',
+          averageStars: 0,
+          numberOfReviews: 0,
+          numberOfEnrollments: 0,
+          category: 'Web engineering',
+          startDate: i2C3Start,
+          endDate: i2C3End,
+          capacity: 50,
+          status: 'PENDING'
+        },
+        {
+          name: 'i2c2',
+          instructorId: i2Id,
+          instructorName: 'i2',
+          averageStars: 0,
+          numberOfReviews: 0,
+          numberOfEnrollments: 0,
+          category: 'Soft computing',
+          startDate: i2C2Start,
+          endDate: i2C2End,
+          capacity: 5000,
+          status: 'PENDING'
+        },
+        {
+          name: 'i2c1',
+          instructorId: i2Id,
+          instructorName: 'i2',
+          averageStars: 0,
+          numberOfReviews: 0,
+          numberOfEnrollments: 0,
+          category: 'Distributed systems',
+          startDate: i2C1Start,
+          endDate: i2C1End,
+          capacity: 200,
+          status: 'PENDING'
+        }
+      ]
+    });
+  }
 })();

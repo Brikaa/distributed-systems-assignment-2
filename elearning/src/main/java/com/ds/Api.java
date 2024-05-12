@@ -367,13 +367,14 @@ public class Api {
                     ResultSet rs = st.executeQuery();
                     ArrayList<ReviewResponse> reviews = new ArrayList<>();
                     while (rs.next()) {
-                        Response res = apiClient.getInstance().target(userServiceUrl + "/student")
+                        final UUID sId = rs.getObject("studentId", UUID.class);
+                        Response res = apiClient.getInstance().target(userServiceUrl + "/student/" + sId)
                                 .request(MediaType.APPLICATION_JSON).header("Authorization", getAuthHeader()).get();
                         String sName = res.getStatus() == 200 ? res.readEntity(StudentResponse.class).name
                                 : "Unknown";
                         reviews.add(new ReviewResponse() {
                             {
-                                studentId = rs.getObject("studentId", UUID.class);
+                                studentId = sId;
                                 studentName = sName;
                                 stars = rs.getInt("stars");
                                 body = rs.getString("body");
@@ -475,9 +476,11 @@ public class Api {
             ArrayList<String> where = new ArrayList<>();
             LinkedList<Binding> bindings = new LinkedList<>();
             String role = ctx.role;
-            boolean instructorWantsTheirCourses = role.equals(INSTRUCTOR_ROLE) && mine != null;
-            if (!role.equals(ADMIN_ROLE) && !instructorWantsTheirCourses)
-                where.add("Course.status = 'ACCEPTED'");
+            boolean instructorWantsTheirCourses = role.equals(INSTRUCTOR_ROLE) && mine != null && mine;
+            if (!role.equals(ADMIN_ROLE) && !instructorWantsTheirCourses) {
+                where.add("(Course.status = 'ACCEPTED' OR Course.instructorId = ?)");
+                bindings.addLast((i, st) -> st.setObject(i, ctx.id));
+            }
             if (name != null) {
                 where.add("LOWER(Course.name) LIKE LOWER(?)");
                 bindings.addLast((i, st) -> st.setString(i, escapeLikeString("%" + name + "%")));
@@ -497,7 +500,9 @@ public class Api {
             query.append(" GROUP BY Course.id");
 
             if (sortBy != null && sortBy.equals("stars"))
-                query.append(" ORDER BY averageStars DESC, Course.name DESC");
+                query.append(" ORDER BY averageStars DESC");
+            else
+                query.append(" ORDER BY Course.name DESC");
 
             try (Connection conn = dataSource.getInstance().getConnection();
                     PreparedStatement st = conn.prepareStatement(query.toString())) {
@@ -505,7 +510,8 @@ public class Api {
                 ResultSet rs = st.executeQuery();
                 ArrayList<CourseResponse> courses = new ArrayList<>();
                 while (rs.next()) {
-                    Response res = apiClient.getInstance().target(userServiceUrl + "/instructor")
+                    final UUID instId = rs.getObject("instructorId", UUID.class);
+                    Response res = apiClient.getInstance().target(userServiceUrl + "/instructor/" + instId)
                             .request(MediaType.APPLICATION_JSON).header("Authorization", getAuthHeader()).get();
                     String iName = res.getStatus() == 200 ? res.readEntity(InstructorResponse.class).name
                             : "Unknown";
@@ -514,7 +520,7 @@ public class Api {
                         {
                             id = rs.getObject("courseId", UUID.class);
                             name = rs.getString("courseName");
-                            instructorId = rs.getObject("instructorId", UUID.class);
+                            instructorId = instId;
                             instructorName = iName;
                             averageStars = rs.getFloat("averageStars");
                             averageStars = averageStars == null ? 0 : averageStars;

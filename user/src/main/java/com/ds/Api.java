@@ -269,8 +269,8 @@ public class Api {
         return withRole("*", (conn, _rs) -> {
             try (PreparedStatement st = conn
                     .prepareStatement(
-                            "SELECT id, name, experience, bio, affiliation FROM AppUser WHERE id = ? AND role = "
-                                    + INSTRUCTOR_ROLE)) {
+                            "SELECT id, name, experience, bio, affiliation FROM AppUser WHERE id = ? AND role = '"
+                                    + INSTRUCTOR_ROLE + "'")) {
                 st.setObject(1, id);
                 ResultSet rs = st.executeQuery();
                 if (!rs.next())
@@ -295,7 +295,8 @@ public class Api {
         return withRole("*", (conn, _rs) -> {
             try (PreparedStatement st = conn
                     .prepareStatement(
-                            "SELECT id, name, bio, affiliation FROM AppUser WHERE id = ? AND role = " + STUDENT_ROLE)) {
+                            "SELECT id, name, bio, affiliation FROM AppUser WHERE id = ? AND role = '" + STUDENT_ROLE
+                                    + "'")) {
                 st.setObject(1, id);
                 ResultSet rs = st.executeQuery();
                 if (!rs.next())
