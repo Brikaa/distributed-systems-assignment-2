@@ -144,13 +144,10 @@
   - [i1c1, i2c1]
 - Search courses by name (2)
   - [i2c1]
-- Search courses by category (S)
-  - i2c1
-  - i2c2
-- Search courses by category (dis)
-  - i2c1
-- View details of i2c1
-  - name: i2c1, description: i2c1d, start: next week, end: after two weeks, category: 'Distributed systems', capacity: 200
+- Search courses by category (E)
+  - [i2c1, i2c2]
+- Search courses by category (mac)
+  - [i1c1]
 - View details of i2c3
   - Fail
 - Enroll in i1c1

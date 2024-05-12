@@ -513,6 +513,7 @@ const assert = require('assert');
     assert.equal(res.status, 200);
   }
 
+  let i2C3Id = undefined;
   {
     console.log('i2 views available courses');
     const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course`);
@@ -520,7 +521,10 @@ const assert = require('assert');
     console.log(text);
     assert.equal(res.status, 200);
     const body = JSON.parse(text);
-    for (const course of body) delete course.id;
+    for (const course of body) {
+      delete course.id;
+      if (course.name === 'i2c3') i2C3Id = course.id;
+    }
     assert.deepStrictEqual(body, [
       {
         name: 'i2c3',
@@ -954,4 +958,228 @@ const assert = require('assert');
       }
     ]);
   }
+
+  {
+    console.log('Register Student');
+    const res = await sendRequest('POST', `${USER_SERVICE_URL}/register`, {
+      name: 's2',
+      email: 's2@s2.com',
+      password: 's2123',
+      affiliation: 'cu',
+      bio: 'This is another student',
+      role: 'STUDENT'
+    });
+    console.log(await res.text());
+    assert.equal(res.status, 200);
+  }
+
+  await login('s2', 's2123');
+
+  {
+    console.log('s2 enrolls in i1c1');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/enrollment`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 202);
+  }
+
+  await markAllNotificationsAsRead();
+
+  {
+    console.log('Register Student');
+    const res = await sendRequest('POST', `${USER_SERVICE_URL}/register`, {
+      name: 's3',
+      email: 's3@s3.com',
+      password: 's3123',
+      affiliation: 'cu',
+      bio: 'Yet another student',
+      role: 'STUDENT'
+    });
+    console.log(await res.text());
+    assert.equal(res.status, 200);
+  }
+
+  await login('s3', 's3123');
+
+  {
+    console.log('s3 views available courses');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    for (const course of body) delete course.id;
+    assert.deepStrictEqual(body, [
+      {
+        name: 'i2c1',
+        instructorId: i2Id,
+        instructorName: 'i2',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Distributed systems',
+        startDate: i2C1Start,
+        endDate: i2C1End,
+        capacity: 200,
+        status: 'ACCEPTED'
+      },
+      {
+        name: 'i1c1',
+        instructorId: i1Id,
+        instructorName: 'i1',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Machine learning',
+        startDate: i1C1Start,
+        endDate: i1C1End,
+        capacity: 300,
+        status: 'ACCEPTED'
+      }
+    ]);
+  }
+
+  {
+    console.log('s3 searches for courses by name (C)');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course?name=C`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    for (const course of body) delete course.id;
+    assert.deepStrictEqual(body, [
+      {
+        name: 'i2c1',
+        instructorId: i2Id,
+        instructorName: 'i2',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Distributed systems',
+        startDate: i2C1Start,
+        endDate: i2C1End,
+        capacity: 200,
+        status: 'ACCEPTED'
+      },
+      {
+        name: 'i1c1',
+        instructorId: i1Id,
+        instructorName: 'i1',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Machine learning',
+        startDate: i1C1Start,
+        endDate: i1C1End,
+        capacity: 300,
+        status: 'ACCEPTED'
+      }
+    ]);
+  }
+
+  {
+    console.log('s3 searches for courses by name (2)');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course?name=2`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    for (const course of body) delete course.id;
+    assert.deepStrictEqual(body, [
+      {
+        name: 'i2c1',
+        instructorId: i2Id,
+        instructorName: 'i2',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Distributed systems',
+        startDate: i2C1Start,
+        endDate: i2C1End,
+        capacity: 200,
+        status: 'ACCEPTED'
+      }
+    ]);
+  }
+
+  {
+    console.log('s3 searches for courses by category (E)');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course?category=E`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    for (const course of body) delete course.id;
+    assert.deepStrictEqual(body, [
+      {
+        name: 'i2c1',
+        instructorId: i2Id,
+        instructorName: 'i2',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Distributed systems',
+        startDate: i2C1Start,
+        endDate: i2C1End,
+        capacity: 200,
+        status: 'ACCEPTED'
+      },
+      {
+        name: 'i1c1',
+        instructorId: i1Id,
+        instructorName: 'i1',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Machine learning',
+        startDate: i1C1Start,
+        endDate: i1C1End,
+        capacity: 300,
+        status: 'ACCEPTED'
+      }
+    ]);
+  }
+
+  {
+    console.log('s3 searches for courses by category (mac)');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course?category=mac`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    for (const course of body) delete course.id;
+    assert.deepStrictEqual(body, [
+      {
+        name: 'i1c1',
+        instructorId: i1Id,
+        instructorName: 'i1',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Machine learning',
+        startDate: i1C1Start,
+        endDate: i1C1End,
+        capacity: 300,
+        status: 'ACCEPTED'
+      }
+    ]);
+  }
+
+  {
+    console.log('s3 views i2c3');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course/${i2C3Id}`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 404);
+  }
+
+  {
+    console.log('s3 enrolls in i1c1');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/enrollment`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 202);
+  }
+
+  await markAllNotificationsAsRead();
 })();

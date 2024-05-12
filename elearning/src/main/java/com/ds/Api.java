@@ -484,11 +484,11 @@ public class Api {
             }
             if (name != null) {
                 where.add("LOWER(Course.name) LIKE LOWER(?)");
-                bindings.addLast((i, st) -> st.setString(i, escapeLikeString("%" + name + "%")));
+                bindings.addLast((i, st) -> st.setString(i, "%" + escapeLikeString(name) + "%"));
             }
             if (category != null) {
                 where.add("LOWER(Course.category) LIKE LOWER(?)");
-                bindings.addLast((i, st) -> st.setString(i, escapeLikeString("%" + category + "%")));
+                bindings.addLast((i, st) -> st.setString(i, "%" + escapeLikeString(category) + "%"));
             }
             if (instructorWantsTheirCourses) {
                 where.add("Course.instructorId = ?");
