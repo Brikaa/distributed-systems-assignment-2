@@ -30,6 +30,8 @@ const assert = require('assert');
     authToken = JSON.parse(text)['token'];
   };
 
+  const currentTimeSeconds = () => Math.floor(Date.now() / 1000);
+
   {
     console.log('Register Instructor');
     const res = await sendRequest('POST', `${USER_SERVICE_URL}/register`, {
@@ -275,12 +277,127 @@ const assert = require('assert');
     const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course`, {
       name: 'i1c1',
       description: 'i1c1d',
-      startDate: Date.now() + 7 * 24 * 60 * 60,
-      endDate: Date.now() + 14 * 24 * 60 * 60,
+      startDate: currentTimeSeconds() + 7 * 24 * 60 * 60,
+      endDate: currentTimeSeconds() + 14 * 24 * 60 * 60,
       category: 'Machine learning',
       capacity: 300
     });
     console.log(await res.text());
     assert.equal(res.status, 403);
   }
+
+  await login('i1', 'i1123');
+
+  {
+    console.log('i1 views available courses');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    assert.deepStrictEqual(JSON.parse(text), { courses: [] });
+  }
+
+  {
+    console.log('i1 views their courses');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course?mine=true`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    assert.deepStrictEqual(JSON.parse(text), { courses: [] });
+  }
+
+  {
+    console.log('i1 creates a course (i1c1)');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course`, {
+      name: 'i1c1',
+      description: 'i1c1d',
+      startDate: currentTimeSeconds() + 7 * 24 * 60 * 60,
+      endDate: currentTimeSeconds() + 14 * 24 * 60 * 60,
+      category: 'Machine learning',
+      capacity: 300
+    });
+    console.log(await res.text());
+    assert.equal(res.status, 200);
+  }
+
+  {
+    console.log('i1 tries to create a course that starts in the past');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course`, {
+      name: 'i1c2',
+      description: 'i1c1d',
+      startDate: currentTimeSeconds() - 7 * 24 * 60 * 60,
+      endDate: currentTimeSeconds() + 14 * 24 * 60 * 60,
+      category: 'Machine learning',
+      capacity: 300
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 400);
+    assert.equal(JSON.parse(text)['message'], "Course can't start in the past");
+  }
+
+  {
+    console.log('i1 tries to create a course that ends before it starts');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course`, {
+      name: 'i1c2',
+      description: 'i1c1d',
+      startDate: currentTimeSeconds() + 14 * 24 * 60 * 60,
+      endDate: currentTimeSeconds() + 7 * 24 * 60 * 60,
+      category: 'Machine learning',
+      capacity: 300
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 400);
+    assert.equal(JSON.parse(text)['message'], "End date can't be before the start date");
+  }
+
+  {
+    console.log('i1 tries to create a course with a negative capacity');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course`, {
+      name: 'i1c2',
+      description: 'i1c1d',
+      startDate: currentTimeSeconds() + 7 * 24 * 60 * 60,
+      endDate: currentTimeSeconds() + 14 * 24 * 60 * 60,
+      category: 'Machine learning',
+      capacity: -300
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 400);
+    assert.equal(JSON.parse(text)['message'], 'Capacity must be a positive number');
+  }
+
+  {
+    console.log('i1 tries to create a course with zero capacity');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course`, {
+      name: 'i1c2',
+      description: 'i1c1d',
+      startDate: currentTimeSeconds() + 7 * 24 * 60 * 60,
+      endDate: currentTimeSeconds() + 14 * 24 * 60 * 60,
+      category: 'Machine learning',
+      capacity: 0
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 400);
+    assert.equal(JSON.parse(text)['message'], 'Capacity must be a positive number');
+  }
+
+  {
+    console.log('Register Instructor');
+    const res = await sendRequest('POST', `${USER_SERVICE_URL}/register`, {
+      name: 'i2',
+      email: 'i2@i2.com',
+      password: 'i2123',
+      affiliation: 'cu',
+      experience: 8,
+      bio: 'This is another instructor',
+      role: 'INSTRUCTOR'
+    });
+    console.log(await res.text());
+    assert.equal(res.status, 200);
+  }
+
+  await login('i2', 'i2123');
 })();

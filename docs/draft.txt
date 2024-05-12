@@ -47,6 +47,7 @@
   - Send notifications for runtime errors during asynchronous processing
   - Use SQL transactions in reviews
   - ResultSet rs, if (rs.next()) -> if (st.executeQuery().next())
+  - Generic function to make sure request is not empty
 
 - Assumptions
   - Instructors can create courses without approvals
