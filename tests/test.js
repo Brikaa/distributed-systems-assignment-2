@@ -54,6 +54,8 @@ const assert = require('assert');
     );
   };
 
+  const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+
   {
     console.log('Register Instructor');
     const res = await sendRequest('POST', `${USER_SERVICE_URL}/register`, {
@@ -243,6 +245,7 @@ const assert = require('assert');
 
   await login('s1', 's1123');
 
+  let s1Id = undefined;
   {
     console.log('s1 views themselves');
     const res = await sendRequest('GET', `${USER_SERVICE_URL}/user`);
@@ -250,6 +253,7 @@ const assert = require('assert');
     console.log(text);
     assert.equal(res.status, 200);
     const body = JSON.parse(text);
+    s1Id = body.id;
     delete body.id;
     assert.deepStrictEqual(body, {
       name: 's1',
@@ -975,6 +979,25 @@ const assert = require('assert');
 
   await login('s2', 's2123');
 
+  let s2Id = undefined;
+  {
+    console.log('s2 views themselves');
+    const res = await sendRequest('GET', `${USER_SERVICE_URL}/user`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    s2Id = body.id;
+    delete body.id;
+    assert.deepStrictEqual(body, {
+      name: 's2',
+      email: 's2@s2.com',
+      role: 'STUDENT',
+      bio: 'This is another student',
+      affiliation: 'cu'
+    });
+  }
+
   {
     console.log('s2 enrolls in i1c1');
     const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/enrollment`);
@@ -1000,6 +1023,25 @@ const assert = require('assert');
   }
 
   await login('s3', 's3123');
+
+  let s3Id = undefined;
+  {
+    console.log('s3 views themselves');
+    const res = await sendRequest('GET', `${USER_SERVICE_URL}/user`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    s3Id = body.id;
+    delete body.id;
+    assert.deepStrictEqual(body, {
+      name: 's3',
+      email: 's3@s3.com',
+      role: 'STUDENT',
+      bio: 'Yet another student',
+      affiliation: 'cu'
+    });
+  }
 
   {
     console.log('s3 views available courses');
@@ -1179,6 +1221,166 @@ const assert = require('assert');
     const text = await res.text();
     console.log(text);
     assert.equal(res.status, 202);
+  }
+
+  await markAllNotificationsAsRead();
+
+  await login('i2', 'i2123');
+
+  let i2C1S1Id = undefined;
+  {
+    console.log('i2 views enrollments on i2c1');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course/${i2C1Id}/enrollment`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    body.forEach((e) => {
+      if (e.studentName === 's1') i2C1S1Id = e.id;
+      delete e.id;
+    });
+    delete body.id;
+    assert.deepStrictEqual(body, [
+      {
+        studentId: s1Id,
+        studentName: 's1',
+        status: 'PENDING'
+      }
+    ]);
+  }
+
+  await login('i1', 'i1123');
+
+  let i1C1S1Id = undefined;
+  let i1C1S2Id = undefined;
+  let i1C1S3Id = undefined;
+  {
+    console.log('i1 views enrollments on i1c1');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/enrollment`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    body.sort((a, b) => {
+      if (a.studentName === b.studentName) return 0;
+      if (a.studentName < b.studentName) return -1;
+      if (a.studentName > b.studentName) return 1;
+    });
+    body.forEach((enrollment) => {
+      if (enrollment.studentName === 's1') i1C1S1Id = enrollment.id;
+      else if (enrollment.studentName === 's2') i1C1S2Id = enrollment.id;
+      else if (enrollment.studentName === 's3') i1C1S3Id = enrollment.id;
+      delete enrollment.id;
+    });
+    assert.deepStrictEqual(body, [
+      {
+        studentId: s1Id,
+        studentName: 's1',
+        status: 'PENDING'
+      },
+      {
+        studentId: s2Id,
+        studentName: 's2',
+        status: 'PENDING'
+      },
+      {
+        studentId: s3Id,
+        studentName: 's3',
+        status: 'PENDING'
+      }
+    ]);
+  }
+
+  {
+    console.log('i1 tries to view enrollments on i2c1');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course/${i2C1Id}/enrollment`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 404);
+  }
+
+  {
+    console.log('i1 accepts i1c1s1');
+    const res = await sendRequest('PUT', `${ELEARNING_SERVICE_URL}/enrollment/${i1C1S1Id}`, {
+      status: 'ACCEPTED'
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 202);
+  }
+
+  {
+    console.log('i1 accepts i1c1s2');
+    const res = await sendRequest('PUT', `${ELEARNING_SERVICE_URL}/enrollment/${i1C1S2Id}`, {
+      status: 'ACCEPTED'
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 202);
+  }
+
+  {
+    console.log('i1 rejects i1c1s3');
+    const res = await sendRequest('PUT', `${ELEARNING_SERVICE_URL}/enrollment/${i1C1S3Id}`, {
+      status: 'REJECTED'
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 202);
+  }
+
+  {
+    console.log('i1 tries to reject i1c1s3 again');
+    const res = await sendRequest('PUT', `${ELEARNING_SERVICE_URL}/enrollment/${i1C1S3Id}`, {
+      status: 'REJECTED'
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 202);
+  }
+
+  {
+    console.log('i1 tries to accept i2c1s1');
+    const res = await sendRequest('PUT', `${ELEARNING_SERVICE_URL}/enrollment/${i2C1S1Id}`, {
+      status: 'REJECTED'
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 202);
+    await sleep(10);
+  }
+
+  {
+    console.log('i1 lists all notifications');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/notification`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    body.sort((a, b) => {
+      if (a.body === b.body) return 0;
+      if (a.body < b.body) return -1;
+      if (a.body > b.body) return 1;
+    });
+    body.forEach((notification) => delete notification.id);
+    const expected = [
+      {
+        title: 'Course enrollment status',
+        body: `Could not find a pending enrollment with id: ${i1C1S3Id} that was sent to one of your courses.`,
+        isRead: false
+      },
+      {
+        title: 'Course enrollment status',
+        body: `Could not find a pending enrollment with id: ${i2C1S1Id} that was sent to one of your courses.`,
+        isRead: false
+      }
+    ];
+    expected.sort((a, b) => {
+      if (a.body === b.body) return 0;
+      if (a.body < b.body) return -1;
+      if (a.body > b.body) return 1;
+    });
+    assert.deepStrictEqual(body, expected);
   }
 
   await markAllNotificationsAsRead();

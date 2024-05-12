@@ -99,7 +99,7 @@ public class EnrollmentWorker implements MessageListener {
     }
 
     private void updateEnrollment(UUID instructorId, UUID enrollmentId, String status) throws SQLException {
-        if (status.equals("ACCEPTED") || status.equals("REJECTED")) {
+        if (!status.equals("ACCEPTED") && !status.equals("REJECTED")) {
             System.err.println("Received invalid status: " + status);
             return;
         }

@@ -156,13 +156,14 @@
   - Success
 
 - Login instructor(i2, i2123)
-  - View i2c1 enrollments
-    - [i2c1s1]
+  - Success
+- View i2c1 enrollments
+  - [i2c1s1]
 
 - Login instructor (i1, i1123)
   - Success
 - View i1c1 enrollments
-  - [i1c1s1, i1c1s2]
+  - [i1c1s1, i1c1s2, i1c1s3]
 - View i2c1 enrollments
   - Fail
 - Accept i1c1s1

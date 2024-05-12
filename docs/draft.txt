@@ -91,11 +91,13 @@
     - Returns user info or 401
 
 - Test improvements
-  - Test enrolling in a full course
   - Test instructor search
   - Test failure in MDB
 
 - Test todo
   - Admin manage user accounts
+  - Test enrolling in a full course
   - Test accepting enrollment in a full course
+  - Test enrolling in a current course
+  - Test accepting enrollment in a current course
   - Test review is at proper time

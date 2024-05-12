@@ -151,7 +151,7 @@ public class Api {
         return withRole(INSTRUCTOR_ROLE, (ctx) -> {
             if (req.name == null || req.description == null || req.startDate == null || req.endDate == null
                     || req.category == null || req.capacity == null)
-                return Response.status(400).entity(new MessageResponse("Empty body")).build();
+                return Response.status(400).entity(new MessageResponse("Incomplete body")).build();
 
             {
                 String err = null;
@@ -349,6 +349,12 @@ public class Api {
         });
     }
 
+    private StudentResponse getStudentResponseFromApi(UUID studentId) {
+        Response res = apiClient.getInstance().target(userServiceUrl + "/student/" + studentId)
+                .request(MediaType.APPLICATION_JSON).header("Authorization", getAuthHeader()).get();
+        return res.getStatus() == 200 ? res.readEntity(StudentResponse.class) : null;
+    }
+
     @GET
     @Path("/course/{courseId}/review")
     public Response listReviews(@PathParam("courseId") UUID courseId) throws SQLException {
@@ -369,10 +375,8 @@ public class Api {
                     ArrayList<ReviewResponse> reviews = new ArrayList<>();
                     while (rs.next()) {
                         final UUID sId = rs.getObject("studentId", UUID.class);
-                        Response res = apiClient.getInstance().target(userServiceUrl + "/student/" + sId)
-                                .request(MediaType.APPLICATION_JSON).header("Authorization", getAuthHeader()).get();
-                        String sName = res.getStatus() == 200 ? res.readEntity(StudentResponse.class).name
-                                : "Unknown";
+                        StudentResponse res = getStudentResponseFromApi(sId);
+                        String sName = res != null ? res.name : "Unknown";
                         reviews.add(new ReviewResponse() {
                             {
                                 studentId = sId;
@@ -609,7 +613,7 @@ public class Api {
     @Path("/enrollment/{id}")
     public Response updateEnrollment(@PathParam("id") UUID id, EnrollmentUpdateRequest req) throws SQLException {
         return withRole(INSTRUCTOR_ROLE, (ctx) -> {
-            if (!req.status.equals("ACCEPTED") || req.status.equals("REJECTED"))
+            if (!req.status.equals("ACCEPTED") && !req.status.equals("REJECTED"))
                 return Response.status(400).entity(new MessageResponse("Invalid status")).build();
             context.createProducer().send(queue,
                     "UPDATE:" + ctx.id + ":" + id + ":" + req.status);
@@ -633,26 +637,20 @@ public class Api {
                                 .entity(new MessageResponse("Could not find the specified course in your courses"))
                                 .build();
                 }
-                try (PreparedStatement st = conn.prepareStatement("""
-                        SELECT
-                            Enrollment.id AS id,
-                            Enrollment.studentId AS studentId,
-                            Student.name as studentName,
-                            Enrollment.status as status
-                        FROM
-                            Enrollment
-                            LEFT JOIN Student ON Student.id = Enrollment.studentId
-                        WHERE
-                            Enrollment.courseId = ?""")) {
+                try (PreparedStatement st = conn.prepareStatement(
+                        "SELECT id, studentId, status FROM Enrollment WHERE Enrollment.courseId = ?")) {
                     st.setObject(1, id);
                     ResultSet rs = st.executeQuery();
                     ArrayList<InstructorEnrollmentResponse> enrollments = new ArrayList<>();
                     while (rs.next()) {
+                        StudentResponse res = getStudentResponseFromApi(rs.getObject("studentId", UUID.class));
+                        final UUID sid = res != null ? res.id : UUID.fromString("dc4be835-3a1d-493b-92f7-888829b37aec");
+                        final String sName = res != null ? res.name : "Unknown";
                         enrollments.add(new InstructorEnrollmentResponse() {
                             {
                                 id = rs.getObject("id", UUID.class);
-                                studentId = rs.getObject("studentId", UUID.class);
-                                studentName = rs.getString("studentName");
+                                studentId = sid;
+                                studentName = sName;
                                 status = rs.getString("status");
                             }
                         });

@@ -373,7 +373,7 @@ public class Api {
         }
 
         if (role.equals(ADMIN_ROLE) && sourceId != targetId && req.role != null) {
-            if (!req.role.equals(INSTRUCTOR_ROLE) || !req.role.equals(STUDENT_ROLE) || !req.role.equals(ADMIN_ROLE))
+            if (!req.role.equals(INSTRUCTOR_ROLE) && !req.role.equals(STUDENT_ROLE) && !req.role.equals(ADMIN_ROLE))
                 return Response.status(400).entity(new MessageResponse("Invalid role")).build();
             updates.add("role = '" + req.role + "'");
         }
