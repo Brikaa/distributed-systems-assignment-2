@@ -9,6 +9,10 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.UUID;
 
+import com.ds.clientresponses.InstructorResponse;
+import com.ds.clientresponses.RequestContext;
+import com.ds.clientresponses.StudentResponse;
+import com.ds.clientresponses.UserCountResponse;
 import com.ds.requests.*;
 
 import jakarta.annotation.PostConstruct;
@@ -96,7 +100,7 @@ public class Api {
                 return Response.status(403).build();
         }
 
-        return callback.apply(res.readEntity(RequestContext.class));
+        return callback.apply(ctx);
     }
 
     private Response withRole(String role, Callback callback) throws SQLException {
@@ -466,9 +470,8 @@ public class Api {
                         Course.capacity,
                         Course.status
                     FROM Course
-                        LEFT JOIN Enrollment ON Enrollment.id = Course.enrollmentId AND Enrollment.status = 'ACCEPTED'
-                        LEFT JOIN Review ON Review.courseId = Course.id
-                    ORDER BY Course.name DESC""");
+                        LEFT JOIN Enrollment ON Enrollment.courseId = Course.id AND Enrollment.status = 'ACCEPTED'
+                        LEFT JOIN Review ON Review.courseId = Course.id""");
             ArrayList<String> where = new ArrayList<>();
             LinkedList<Binding> bindings = new LinkedList<>();
             String role = ctx.role;
@@ -484,17 +487,17 @@ public class Api {
                 bindings.addLast((i, st) -> st.setString(i, escapeLikeString("%" + category + "%")));
             }
             if (instructorWantsTheirCourses) {
-                where.add("Instructor.id = ?");
+                where.add("Course.instructorId = ?");
                 bindings.addLast((i, st) -> st.setObject(i, ctx.id));
             }
 
             if (!where.isEmpty())
                 query.append(" WHERE " + String.join(" AND ", where));
 
-            query.append(" GROUP BY Course.id, Instructor.id");
+            query.append(" GROUP BY Course.id");
 
             if (sortBy != null && sortBy.equals("stars"))
-                query.append(" ORDER BY averageStars DESC");
+                query.append(" ORDER BY averageStars DESC, Course.name DESC");
 
             try (Connection conn = dataSource.getInstance().getConnection();
                     PreparedStatement st = conn.prepareStatement(query.toString())) {
@@ -890,36 +893,6 @@ class ReviewsResponse {
         this.reviews = reviews;
     }
 
-}
-
-class RequestContext {
-    public UUID id;
-    public String name;
-    public String email;
-    public String role;
-    public Integer experience;
-    public String bio;
-}
-
-class InstructorResponse {
-    public UUID id;
-    public String name;
-    public Integer experience;
-    public String bio;
-    public String affiliation;
-}
-
-class StudentResponse {
-    public UUID id;
-    public String name;
-    public String bio;
-    public String affiliation;
-}
-
-class UserCountResponse {
-    public Integer numberOfStudents;
-    public Integer numberOfInstructors;
-    public Integer numberOfAdmins;
 }
 
 interface Binding {

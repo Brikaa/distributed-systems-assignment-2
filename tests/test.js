@@ -31,9 +31,7 @@ const assert = require('assert');
   };
 
   {
-    console.log(
-      "Register Instructor"
-    );
+    console.log('Register Instructor');
     const res = await sendRequest('POST', `${USER_SERVICE_URL}/register`, {
       name: 'i1',
       email: 'i1@i1.com',
@@ -200,5 +198,89 @@ const assert = require('assert');
       bio: 'This is a cool instructor',
       affiliation: 'cu'
     });
+  }
+
+  {
+    console.log('Register Student');
+    const res = await sendRequest('POST', `${USER_SERVICE_URL}/register`, {
+      name: 's1',
+      email: 's1@s1.com',
+      password: 's1123',
+      affiliation: 'cu',
+      experience: 13,
+      bio: 'This is a cool student',
+      role: 'STUDENT'
+    });
+    console.log(await res.text());
+    assert.equal(res.status, 200);
+  }
+
+  await login('s1', 's1123');
+
+  {
+    console.log('s1 views themselves');
+    const res = await sendRequest('GET', `${USER_SERVICE_URL}/user`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    delete body.id;
+    assert.deepStrictEqual(body, {
+      name: 's1',
+      email: 's1@s1.com',
+      role: 'STUDENT',
+      bio: 'This is a cool student',
+      affiliation: 'cu'
+    });
+  }
+
+  {
+    console.log('s1 views available courses');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    assert.deepStrictEqual(JSON.parse(text), { courses: [] });
+  }
+
+  {
+    console.log('s1 views past enrollments');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/enrollment?isPast=true`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    assert.deepStrictEqual(JSON.parse(text), { enrollments: [] });
+  }
+
+  {
+    console.log('s1 views current enrollments');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/enrollment?isPast=false`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    assert.deepStrictEqual(JSON.parse(text), { enrollments: [] });
+  }
+
+  {
+    console.log('s1 views all enrollments');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/enrollment`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    assert.deepStrictEqual(JSON.parse(text), { enrollments: [] });
+  }
+
+  {
+    console.log('s1 tries to create a course');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course`, {
+      name: 'i1c1',
+      description: 'i1c1d',
+      startDate: Date.now() + 7 * 24 * 60 * 60,
+      endDate: Date.now() + 14 * 24 * 60 * 60,
+      category: 'Machine learning',
+      capacity: 300
+    });
+    console.log(await res.text());
+    assert.equal(res.status, 403);
   }
 })();
