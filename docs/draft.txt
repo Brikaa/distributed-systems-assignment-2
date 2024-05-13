@@ -94,6 +94,7 @@
   - Test instructor search
   - Test failure in MDB
   - Mark all notifications as read: split into two functions, one of them takes ids only
+  - Student cancels unauthorized enrollment
 
 - Test todo
   - Admin manage user accounts

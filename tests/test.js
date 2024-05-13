@@ -1426,4 +1426,116 @@ const assert = require('assert');
   }
 
   await markAllNotificationsAsRead();
+
+  {
+    console.log('s1 tries to submit a review on i1c1 (it has not started)');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/review`, {
+      stars: 5,
+      role: 'Nice course'
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 404);
+    assert.equal(
+      JSON.parse(text)['message'],
+      'Could not find the specified course in finished courses you were enrolled in'
+    );
+  }
+
+  {
+    console.log('s1 lists current enrollments');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/enrollment?isPast=false`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    for (const enrollment of body) delete enrollment.id;
+    body.sort((a, b) => {
+      if (a.courseName === b.courseName) return 0;
+      if (a.courseName < b.courseName) return -1;
+      if (a.courseName > b.courseName) return 1;
+    });
+    assert.deepStrictEqual(body, [
+      {
+        courseId: i1C1Id,
+        courseName: 'i1c1',
+        courseStartDate: i1C1Start,
+        courseEndDate: i1C1End,
+        status: 'ACCEPTED'
+      },
+      {
+        courseId: i2C1Id,
+        courseName: 'i2c1',
+        courseStartDate: i2C1Start,
+        courseEndDate: i2C1End,
+        status: 'PENDING'
+      }
+    ]);
+  }
+
+  {
+    console.log('s1 cancels i2c1s1');
+    const res = await sendRequest('DELETE', `${ELEARNING_SERVICE_URL}/enrollment/${i2C1S1Id}`);
+    console.log(await res.text());
+    assert.equal(res.status, 202);
+    await sleep(10);
+  }
+
+  {
+    console.log('s1 lists unread notifications');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/notification?isRead=false`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    body.forEach((notification) => delete notification.id);
+    assert.deepStrictEqual(body, [
+      {
+        title: 'Course enrollment status',
+        body: `Enrollment of id: ${i2C1S1Id} was cancelled.`,
+        isRead: false
+      }
+    ]);
+  }
+
+  await markAllNotificationsAsRead();
+
+  {
+    console.log('s1 lists current enrollments');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/enrollment?isPast=false`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    for (const enrollment of body) delete enrollment.id;
+    assert.deepStrictEqual(body, [
+      {
+        courseId: i1C1Id,
+        courseName: 'i1c1',
+        courseStartDate: i1C1Start,
+        courseEndDate: i1C1End,
+        status: 'ACCEPTED'
+      }
+    ]);
+  }
+
+  await login('admin', 'admin');
+
+  {
+    console.log('admin gets platform usage');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/usage`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    assert.deepStrictEqual(JSON.parse(text), {
+      numberOfStudents: 3,
+      numberOfInstructors: 2,
+      numberOfAdmins: 1,
+      numberOfAcceptedCourses: 2,
+      numberOfPendingCourses: 1,
+      numberOfAcceptedEnrollments: 2,
+      numberOfRejectedEnrollments: 1,
+      numberOfPendingEnrollments: 0
+    });
+  }
 })();
