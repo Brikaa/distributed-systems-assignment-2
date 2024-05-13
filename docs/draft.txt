@@ -102,4 +102,3 @@
   - Test accepting enrollment in a full course
   - Test enrolling in a current course
   - Test accepting enrollment in a current course
-  - Test review is at proper time
