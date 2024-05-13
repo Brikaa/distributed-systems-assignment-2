@@ -48,6 +48,8 @@
   - Use SQL transactions in reviews
   - ResultSet rs, if (rs.next()) -> if (st.executeQuery().next())
   - Generic function to make sure request is not empty
+  - Explain what each test tests
+  - Health check instead of sleep while running tests
 
 - Assumptions
   - Instructors can create courses without approvals
@@ -102,3 +104,4 @@
   - Test accepting enrollment in a full course
   - Test enrolling in a current course
   - Test accepting enrollment in a current course
+  - Viewing course details (enrolled flag)

@@ -379,6 +379,7 @@ public class Api {
                         String sName = res != null ? res.name : "Unknown";
                         reviews.add(new ReviewResponse() {
                             {
+                                id = rs.getObject("id", UUID.class);
                                 studentId = sId;
                                 studentName = sName;
                                 stars = rs.getInt("stars");
@@ -477,7 +478,7 @@ public class Api {
                         Course.status
                     FROM Course
                         LEFT JOIN Enrollment ON Enrollment.courseId = Course.id AND Enrollment.status = 'ACCEPTED'
-                        LEFT JOIN Review ON Review.courseId = Course.id""");
+                        LEFT JOIN Review ON Review.courseId = Course.id AND Review.studentId = Enrollment.studentId""");
             ArrayList<String> where = new ArrayList<>();
             LinkedList<Binding> bindings = new LinkedList<>();
             String role = ctx.role;
@@ -505,7 +506,7 @@ public class Api {
             query.append(" GROUP BY Course.id");
 
             if (sortBy != null && sortBy.equals("stars"))
-                query.append(" ORDER BY averageStars DESC");
+                query.append(" ORDER BY averageStars DESC NULLS LAST");
             else
                 query.append(" ORDER BY Course.name DESC");
 
@@ -854,10 +855,11 @@ class MessageResponse {
 }
 
 class ReviewResponse {
-    UUID studentId;
-    String studentName;
-    Integer stars;
-    String body;
+    public UUID id;
+    public UUID studentId;
+    public String studentName;
+    public Integer stars;
+    public String body;
 }
 
 interface Binding {

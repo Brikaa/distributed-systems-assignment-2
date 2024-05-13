@@ -247,6 +247,10 @@
 
 - Login student (s2, s2123)
   - Success
+- Submit review i1c1 (stars: 6)
+  - Fail
+- Submit review i1c1 (stars: -1)
+  - Fail
 - Submit review i1c1 (stars: 0)
   - Success
 
@@ -254,9 +258,6 @@
   - Success
 - Submit review i1c1 (stars: 0)
   - Fail: you were not accepted
-
-- Login student (s3, s3123)
-  - Success
 - List courses ordered by reviews
   - [i1c1 (2.5), i2c1 (0)]
 - List i1c1 reviews

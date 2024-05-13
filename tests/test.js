@@ -1439,7 +1439,7 @@ const assert = require('assert');
     console.log('s1 tries to submit a review on i1c1 (it has not started)');
     const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/review`, {
       stars: 5,
-      role: 'Nice course'
+      body: 'Nice course'
     });
     const text = await res.text();
     console.log(text);
@@ -1603,7 +1603,7 @@ const assert = require('assert');
     console.log('s1 tries to submit a review on i1c1 (still not finished)');
     const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/review`, {
       stars: 5,
-      role: 'Nice course'
+      body: 'Nice course'
     });
     const text = await res.text();
     console.log(text);
@@ -1669,7 +1669,7 @@ const assert = require('assert');
     console.log('s1 submits a review on i1c1');
     const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/review`, {
       stars: 5,
-      role: 'Nice course'
+      body: 'Nice course'
     });
     const text = await res.text();
     console.log(text);
@@ -1680,7 +1680,7 @@ const assert = require('assert');
     console.log('s1 tries to submit a review on i1c1 (it has not started)');
     const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/review`, {
       stars: 5,
-      role: 'Nice course'
+      body: 'Nice course'
     });
     const text = await res.text();
     console.log(text);
@@ -1692,7 +1692,7 @@ const assert = require('assert');
     console.log('s1 tries to submit a review on i2c1');
     const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i2C1Id}/review`, {
       stars: 5,
-      role: 'Nice course'
+      body: 'Nice course'
     });
     const text = await res.text();
     console.log(text);
@@ -1701,5 +1701,123 @@ const assert = require('assert');
       JSON.parse(text)['message'],
       'Could not find the specified course in finished courses you were enrolled in'
     );
+  }
+
+  await login('s2', 's2123');
+
+  {
+    console.log('s2 tries to submit a review on i1c1 with 6 stars');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/review`, {
+      stars: 6
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 400);
+    assert.equal(JSON.parse(text)['message'], 'Stars must be between 0 and 5');
+  }
+
+  {
+    console.log('s2 tries to submit a review on i1c1 with negative stars');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/review`, {
+      stars: -1
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 400);
+    assert.equal(JSON.parse(text)['message'], 'Stars must be between 0 and 5');
+  }
+
+  {
+    console.log('s2 submits a review on i1c1');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/review`, {
+      stars: 0
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+  }
+
+  await login('s3', 's3123');
+
+  {
+    console.log('s3 tries to submit a review on i1c1 (their enrollment was rejected)');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/review`, {
+      stars: 5,
+      body: 'Nice course'
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 404);
+    assert.equal(
+      JSON.parse(text)['message'],
+      'Could not find the specified course in finished courses you were enrolled in'
+    );
+  }
+
+  {
+    console.log('s3 views available courses ordered by stars');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course?sortBy=stars`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    for (const course of body) delete course.id;
+    assert.deepStrictEqual(body, [
+      {
+        name: 'i1c1',
+        instructorId: i1Id,
+        instructorName: 'i1',
+        averageStars: 2.5,
+        numberOfReviews: 2,
+        numberOfEnrollments: 2,
+        category: 'Machine learning',
+        startDate: i1C1Start,
+        endDate: i1C1End,
+        capacity: 300,
+        status: 'ACCEPTED'
+      },
+      {
+        name: 'i2c1',
+        instructorId: i2Id,
+        instructorName: 'i2',
+        averageStars: 0,
+        numberOfReviews: 0,
+        numberOfEnrollments: 0,
+        category: 'Distributed systems',
+        startDate: i2C1Start,
+        endDate: i2C1End,
+        capacity: 200,
+        status: 'ACCEPTED'
+      }
+    ]);
+  }
+
+  {
+    console.log('s3 lists reviews on i1c1');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/review`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    for (const review of body) delete review.id;
+    body.sort((a, b) => {
+      if (a.studentName === b.studentName) return 0;
+      if (a.studentName < b.studentName) return -1;
+      if (a.studentName > b.studentName) return 1;
+    });
+    assert.deepStrictEqual(body, [
+      {
+        studentId: s1Id,
+        studentName: 's1',
+        stars: 5,
+        body: 'Nice course'
+      },
+      {
+        studentId: s2Id,
+        studentName: 's2',
+        stars: 0,
+        body: ''
+      }
+    ]);
   }
 })();
