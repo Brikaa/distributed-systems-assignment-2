@@ -38,7 +38,6 @@
   - Review a course
 
 - Technical debt
-  - A way to freeze time.now() for tests
   - Use the application server's or a third part connection pool
   - Don't cast to text when comparing UUID
   - Abstract transactions?
@@ -49,10 +48,9 @@
   - ResultSet rs, if (rs.next()) -> if (st.executeQuery().next())
   - Generic function to make sure request is not empty
   - Explain what each test tests
+  - Notification count endpoint
 
 - Assumptions
-  - Instructors can create courses without approvals
-  - Instructors need approval to add course content
   - Cancelling an enrollment means deleting it
   - Enrollments for future/current courses are considered "current" enrollments
   - Enrollments for courses that have ended are considered "past" enrollments
