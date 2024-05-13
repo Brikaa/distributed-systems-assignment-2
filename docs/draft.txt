@@ -49,7 +49,6 @@
   - ResultSet rs, if (rs.next()) -> if (st.executeQuery().next())
   - Generic function to make sure request is not empty
   - Explain what each test tests
-  - Health check instead of sleep while running tests
 
 - Assumptions
   - Instructors can create courses without approvals
@@ -97,6 +96,8 @@
   - Test failure in MDB
   - Mark all notifications as read: split into two functions, one of them takes ids only
   - Student cancels unauthorized enrollment
+  - Health check instead of sleep while running tests
+  - Parallelize tests
 
 - Test todo
   - Admin manage user accounts

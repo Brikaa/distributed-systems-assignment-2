@@ -239,7 +239,9 @@ public class Api {
                                         LEFT JOIN Enrollment AS MyEnrollment
                                             ON MyEnrollment.id = Enrollment.id
                                             AND MyEnrollment.studentId = ?
-                                        LEFT JOIN Review ON Review.courseId = Course.id
+                                        LEFT JOIN Review
+                                            ON Review.courseId = Course.id
+                                            AND Review.studentId = Enrollment.studentId
                                     WHERE
                                         Course.id = ?
                                         %s

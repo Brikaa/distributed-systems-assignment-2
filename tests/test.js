@@ -1820,4 +1820,166 @@ const assert = require('assert');
       }
     ]);
   }
+
+  await login('s1', 's1123');
+
+  {
+    console.log('s1 views i1c1 (notice they are now enrolled)');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    assert.deepStrictEqual(body, {
+      id: i1C1Id,
+      name: 'i1c1',
+      category: 'Machine learning',
+      description: 'i1c1dd',
+      instructorId: i1Id,
+      startDate: i1C1Start,
+      endDate: i1C1End,
+      capacity: 300,
+      numberOfEnrollments: 2,
+      numberOfReviews: 2,
+      averageStars: 2.5,
+      status: 'ACCEPTED',
+      enrolled: true
+    });
+  }
+
+  await login('admin', 'admin');
+
+  {
+    console.log('admin sets s1 as admin');
+    const res = await sendRequest('PUT', `${USER_SERVICE_URL}/user/${s1Id}`, {
+      role: 'ADMIN'
+    });
+    console.log(await res.text());
+    assert.equal(res.status, 200);
+  }
+
+  {
+    console.log('admin lists all users');
+    const res = await sendRequest('GET', `${USER_SERVICE_URL}/users`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    body.forEach((user) => delete user.id);
+    body.sort((a, b) => {
+      if (a.name === b.name) return 0;
+      if (a.name < b.name) return -1;
+      if (a.name > b.name) return 1;
+    });
+    assert.deepStrictEqual(body, [
+      {
+        name: 'admin',
+        email: 'admin@admin.com',
+        role: 'ADMIN',
+        bio: 'This is an admin account',
+        affiliation: 'Admin university'
+      },
+      {
+        name: 'i1',
+        email: 'i1@i1.com',
+        role: 'INSTRUCTOR',
+        experience: 13,
+        bio: 'This is a cool instructor',
+        affiliation: 'cu'
+      },
+      {
+        name: 'i2',
+        email: 'i2@i2.com',
+        role: 'INSTRUCTOR',
+        experience: 8,
+        bio: 'This is another instructor',
+        affiliation: 'cu'
+      },
+      {
+        name: 's1',
+        email: 's1@s1.com',
+        role: 'ADMIN',
+        bio: 'This is a cool student',
+        affiliation: 'cu'
+      },
+      {
+        name: 's2',
+        email: 's2@s2.com',
+        role: 'STUDENT',
+        bio: 'This is another student',
+        affiliation: 'cu'
+      },
+      {
+        name: 's3',
+        email: 's3@s3.com',
+        role: 'STUDENT',
+        bio: 'Yet another student',
+        affiliation: 'cu'
+      }
+    ]);
+  }
+
+  await login('s1', 's1123');
+
+  {
+    console.log('s1 gets platform usage');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/usage`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    assert.deepStrictEqual(JSON.parse(text), {
+      numberOfStudents: 2,
+      numberOfInstructors: 2,
+      numberOfAdmins: 2,
+      numberOfAcceptedCourses: 2,
+      numberOfPendingCourses: 1,
+      numberOfAcceptedEnrollments: 2,
+      numberOfRejectedEnrollments: 1,
+      numberOfPendingEnrollments: 0
+    });
+  }
+
+  {
+    console.log('s1 deletes i1');
+    const res = await sendRequest('DELETE', `${USER_SERVICE_URL}/user/${i1Id}`);
+    console.log(await res.text());
+    assert.equal(res.status, 200);
+  }
+
+  {
+    console.log('s1 changes the name of i2 to x2');
+    const res = await sendRequest('PUT', `${USER_SERVICE_URL}/user/${i2Id}`, {
+      name: 'x2'
+    });
+    console.log(await res.text());
+    assert.equal(res.status, 200);
+  }
+
+  {
+    console.log('Try to log in as i1');
+    const res = await sendRequest('POST', `${USER_SERVICE_URL}/login`, {
+      nameOrEmail: 'i1',
+      password: 'i1123'
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 401);
+    assert.equal(JSON.parse(text)['message'], 'Invalid name/email or password');
+  }
+
+  {
+    console.log('Try to log in as i2 (with the old name)');
+    const res = await sendRequest('POST', `${USER_SERVICE_URL}/login`, {
+      nameOrEmail: 'i2',
+      password: 'i2123'
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 401);
+    assert.equal(JSON.parse(text)['message'], 'Invalid name/email or password');
+  }
+
+  await login('x2', 'i2123');
+
+  console.log('All tests passed');
 })();

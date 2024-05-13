@@ -262,3 +262,31 @@
   - [i1c1 (2.5), i2c1 (0)]
 - List i1c1 reviews
   - [(stars: 5, body: 'Nice course'), (stars: 0, body: '')]
+
+- Login admin (admin, admin)
+  - Success
+- Set s1 as admin
+  - Success
+
+- Login admin s1 (s1, s1123)
+  - Success
+- Get usage
+  - Number of students: 2
+  - Number of instructors: 2
+  - Number of admins: 2
+  - Number of accepted courses: 2
+  - Number of pending courses: 1
+  - Number of accepted enrollments: 2
+  - Number of rejected enrollments: 1
+  - Number of pending enrollments: 0
+- Delete i1
+  - Success
+- Set i2 name to x2
+  - Success
+
+- Login Instructor (i1, i1123)
+  - Fail
+- Login Instructor (i2, i2123)
+  - Fail
+- Login Instructor (x2, x2123)
+  - Success

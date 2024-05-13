@@ -401,8 +401,12 @@ public class Api {
             st.setObject(i++, targetId);
             if (st.executeUpdate() == 0)
                 return Response.status(404).entity(new MessageResponse("Could not find the specified user")).build();
-            String token = createToken(targetId, req.password);
-            return Response.ok().entity(new TokenResponse(token)).build();
+            if (req.password == null) {
+                return Response.ok().build();
+            } else {
+                String token = createToken(targetId, req.password);
+                return Response.ok().entity(new TokenResponse(token)).build();
+            }
         }
     }
 
