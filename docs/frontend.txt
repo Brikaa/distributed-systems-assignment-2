@@ -1,0 +1,26 @@
+- Guest
+  - Login
+  - Register
+- Admin
+  - Notifications
+    - Accessing it marks everything as read
+  - View all users
+    - User 1 (delete, view/edit)
+  - View all courses
+    - Course 1 - PENDING/ACCEPTED (delete, view/edit)
+  - View platform usage
+- Instructor
+  - Notifications
+    - Accessing it marks everything as read
+  - Create course
+  - View courses (includes search, sort, filter by mine, view enrollments)
+    - Course 1 - Category - rating (view, view enrollments (if mine))
+      - Enrollments
+        - Student 1 - PENDING/ACCEPTED/REJECTED - (accept/reject (if pending))
+- Student
+  - Notifications
+    - Accessing it marks everything as read
+  - View enrollments (filterable by current/past/all)
+    - Course name - PENDING/ACCEPTED/REJECTED (cancel)
+  - View courses (includes search, sort)
+    - Course 1 - Category - rating (view, enroll (if not enrolled and not started), create review (if finished and enrolled))

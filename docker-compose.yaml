@@ -65,3 +65,16 @@ services:
       interval: 3s
       timeout: 5s
       retries: 5
+  frontend:
+    build: frontend/
+    networks:
+      - api
+    environment:
+      - FRONTEND_PORT=8080
+      - ELEARNING_SERVICE_URL=http://elearning:8080/elearning
+      - USER_SERVICE_URL=http://user:8080/elearning-user
+    ports:
+      - '8080:8080'
+    depends_on:
+      - elearning
+      - user
