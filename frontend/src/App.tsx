@@ -17,13 +17,19 @@ interface Context {
   role: Role;
 }
 
-interface UserResponse {
+interface CourseResponse {
+  id: string;
   name: string;
-  email: string;
-  role: string;
-  experience: number;
-  bio: string;
-  affiliation: string;
+  instructorId: string;
+  instructorName: string;
+  averageStars: number;
+  numberOfReviews: number;
+  numberOfEnrollments: number;
+  category: string;
+  startDate: number;
+  endDate: number;
+  capacity: number;
+  status: string;
 }
 
 interface UserInList {
@@ -66,7 +72,7 @@ const UserEditPage = (props: { user: UserInList; authToken: string }) => {
   const getAndSetUser = useCallback(async () => {
     const res = await sendRequest(props.authToken, 'GET', `/api/user/user/${props.user.id}`);
     if (res.status !== 200) return;
-    const u = (await res.json()) as UserResponse;
+    const u = await res.json();
     setName(u.name);
     setEmail(u.email);
     setRole(u.role);
@@ -76,9 +82,7 @@ const UserEditPage = (props: { user: UserInList; authToken: string }) => {
   }, [props.authToken, props.user]);
 
   useEffect(() => {
-    (async () => {
-      await getAndSetUser();
-    })();
+    getAndSetUser();
   }, [getAndSetUser]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -188,6 +192,187 @@ const AllUsersPage = (props: { authToken: string; setPage: ElementSetter }) => {
         </li>
       ))}
     </ul>
+  );
+};
+
+const CourseEditPage = (props: { course: CourseResponse; authToken: string }) => {
+  const [name, setName] = useState<string>();
+  const [description, setDescription] = useState<string>();
+  const [startDate, setStartDate] = useState<number>(Math.floor(Date.now() / 1000));
+  const [endDate, setEndDate] = useState<number>();
+  const [category, setCategory] = useState<string>();
+  const [capacity, setCapacity] = useState<number>();
+  const [status, setStatus] = useState<string>();
+
+  const getAndSetCourse = useCallback(async () => {
+    const res = await sendRequest(
+      props.authToken,
+      'GET',
+      `/api/elearning/course${props.course.id}`
+    );
+    if (res.status !== 200) return;
+    const c = await res.json();
+    setName(c.name);
+    setDescription(c.description);
+    setStartDate(c.startDate);
+    setEndDate(c.endDate);
+    setCategory(c.category);
+    setCapacity(c.capacity);
+    setStatus(c.status);
+  }, [props.authToken, props.course]);
+
+  useEffect(() => {
+    getAndSetCourse();
+  }, [getAndSetCourse]);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const res = await sendRequest(
+      props.authToken,
+      'PUT',
+      `/api/elearning/course/${props.course.id}`,
+      {
+        name,
+        description,
+        startDate,
+        endDate,
+        category,
+        capacity,
+        status
+      }
+    );
+    if (res.status !== 200) return;
+    alert('Success!');
+    getAndSetCourse();
+  };
+
+  return (
+    <div>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <br />
+        <input
+          type="text"
+          placeholder="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+        <br />
+        <input
+          type="number"
+          title="Start date (unix seconds)"
+          value={startDate}
+          onChange={(e) => setStartDate(parseInt(e.target.value))}
+        />
+        <br />
+        <input
+          type="number"
+          title="End date (unix seconds)"
+          value={endDate}
+          onChange={(e) => setEndDate(parseInt(e.target.value))}
+        />
+        <br />
+        <input
+          type="text"
+          placeholder="Category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        />
+        <br />
+        <input
+          type="number"
+          title="Capacity"
+          value={capacity}
+          onChange={(e) => setCapacity(parseInt(e.target.value))}
+        />
+        <br />
+        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="ACCEPTED">ACCEPTED</option>
+          <option value="PENDING">PENDING</option>
+        </select>
+        <br />
+        <input type="submit" />
+      </form>
+    </div>
+  );
+};
+
+const AdminListCourses = (props: { authToken: string; setPage: ElementSetter }) => {
+  const [courses, setCourses] = useState<CourseResponse[]>([]);
+  const [name, setName] = useState<string>('');
+  const [category, setCategory] = useState<string>('');
+  useEffect(() => {
+    (async () => {
+      const res = await sendRequest(props.authToken, 'GET', '/api/elearning/course');
+      if (res.status !== 200) return;
+      setCourses(await res.json());
+    })();
+  }, [props.authToken]);
+
+  const handleSort = async () => {
+    const res = await sendRequest(props.authToken, 'GET', '/api/elearning/course?sortBy=stars');
+    if (res.status !== 200) return;
+    setCourses(await res.json());
+  };
+
+  const handleFilter = async () => {
+    const params = new URLSearchParams({ name, category });
+    const res = await sendRequest(
+      props.authToken,
+      'GET',
+      `/api/elearning/course?${params.toString()}`
+    );
+    if (res.status !== 200) return;
+    setCourses(await res.json());
+  };
+
+  const handleDelete = async (courseId: string) => {
+    const res = await sendRequest(props.authToken, 'DELETE', `/api/elearning/course/${courseId}`);
+    if (res.status !== 200) return;
+    const res2 = await sendRequest(props.authToken, 'GET', '/api/elearning/course');
+    if (res2.status !== 200) return;
+    setCourses(await res2.json());
+  };
+
+  return (
+    <div>
+      <input
+        type="text"
+        placeholder="name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />{' '}
+      <input
+        type="text"
+        placeholder="category"
+        value={category}
+        onChange={(e) => setCategory(e.target.value)}
+      />{' '}
+      <button onClick={handleFilter}>Filter</button>{' '}
+      <button onClick={handleSort}>Sort by stars</button>
+      <ul>
+        {courses.map((c) => (
+          <li key={c.id}>
+            {c.name} - {c.category} - by {c.instructorName} - {new Date(c.startDate).toISOString()}{' '}
+            to {new Date(c.endDate).toISOString()} - averageStars: {c.averageStars} (
+            {c.numberOfReviews} reviews) - capacity: {c.numberOfEnrollments}/{c.capacity} (
+            <button
+              onClick={() =>
+                props.setPage(<CourseEditPage authToken={props.authToken} course={c} />)
+              }
+            >
+              View/edit
+            </button>
+            , <button onClick={() => handleDelete(c.id)}>Delete</button>)
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 };
 
