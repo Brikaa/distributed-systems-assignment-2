@@ -104,3 +104,7 @@
   - Test enrolling in a current course
   - Test accepting enrollment in a current course
   - Viewing course details (enrolled flag)
+
+
+- SQL scripts
+  - insert into course(instructorid, name, description, startdate, enddate, category, capacity, status) values ('b2a9b680-3f7b-494c-ae64-5e263a03d6b3', 'i1c1', 'nice course', 1715674429, 1715674529, 'Machine learning', 300, 'PENDING');

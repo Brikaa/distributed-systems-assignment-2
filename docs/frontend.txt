@@ -23,4 +23,9 @@
   - View enrollments (filterable by current/past/all)
     - Course name - PENDING/ACCEPTED/REJECTED (cancel)
   - View courses (includes search, sort)
-    - Course 1 - Category - rating - enrollments/capacity (view, enroll (if not enrolled and not started), create review (if finished and enrolled))
+    - Course 1 - Category - rating - enrollments/capacity (view, enroll (if not enrolled and not started), cancel enrollment (if enrolled), create review (if finished and enrolled))
+
+- TODO:
+  - Reviews inside course details
+  - More course info
+  - Routing logic in root component
