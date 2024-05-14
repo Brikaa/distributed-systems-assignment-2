@@ -56,6 +56,20 @@ interface UsageResponse {
   numberOfPendingEnrollments: number;
 }
 
+interface InstructorResponse {
+  name: string;
+  experience: number;
+  bio: string;
+  affiliation: string;
+}
+
+interface NotificationResponse {
+  id: string;
+  title: string;
+  body: string;
+  isRead: boolean;
+}
+
 const sendRequest = async (authToken: string | null, method: string, url: string, body?: any) => {
   const opts: RequestOptions = {
     method,
@@ -206,18 +220,23 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string }) =>
   const [category, setCategory] = useState<string>();
   const [capacity, setCapacity] = useState<number>();
   const [status, setStatus] = useState<string>();
-  const [instructorName, setInstructorName] = useState<string>();
   const [averageStars, setAverageStars] = useState<number>();
   const [numberOfReviews, setNumberOfReviews] = useState<number>();
   const [numberOfEnrollments, setNumberOfEnrollments] = useState<number>();
+  const [enrolled, setEnrolled] = useState<boolean>(false);
   const [reviews, setReviews] = useState<ReviewResponse[]>([]);
+  const [instructor, setInstructor] = useState<InstructorResponse>({
+    affiliation: "",
+    bio: "",
+    experience: 0,
+    name: "",
+  });
 
   const getAndSetCourse = useCallback(async () => {
     const res = await sendRequest(props.authToken, "GET", `/api/elearning/course/${props.course.id}`);
     if (res.status !== 200) return;
     const c = await res.json();
     setName(c.name);
-    setInstructorName(c.instructorName);
     setAverageStars(c.averageStars);
     setNumberOfReviews(c.numberOfReviews);
     setNumberOfEnrollments(c.numberOfEnrollments);
@@ -227,16 +246,21 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string }) =>
     setCategory(c.category);
     setCapacity(c.capacity);
     setStatus(c.status);
-  }, [props.authToken, props.course.id]);
+    setEnrolled(c.enrolled);
+
+    const res2 = await sendRequest(props.authToken, "GET", `/api/user/instructor/${props.course.instructorId}`);
+    if (res2.status !== 200) return;
+    setInstructor(await res2.json());
+
+    if (c.status === "PENDING") return;
+    const res3 = await sendRequest(props.authToken, "GET", `/api/elearning/course/${props.course.id}/review`);
+    if (res3.status !== 200) return;
+    setReviews(await res3.json());
+  }, [props.authToken, props.course.id, props.course.instructorId]);
 
   useEffect(() => {
     getAndSetCourse();
-    (async () => {
-      const res = await sendRequest(props.authToken, "GET", `/api/elearning/course/${props.course.id}/review`);
-      if (res.status !== 200) return;
-      setReviews(await res.json());
-    })();
-  }, [getAndSetCourse, props.authToken, props.course.id]);
+  }, [getAndSetCourse]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -266,8 +290,6 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string }) =>
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
-        <br />
-        <label>Instructor name: {instructorName}</label>
         <br />
         <input
           type="number"
@@ -303,18 +325,45 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string }) =>
           <option value="PENDING">PENDING</option>
         </select>
         <br />
-        <label>Number of enrollments: {numberOfEnrollments}</label>
+        <label>
+          <b>Number of enrollments:</b> {numberOfEnrollments}
+        </label>
         <br />
-        <label>Average stars: {averageStars}</label>
+        <label>
+          <b>Average stars:</b> {averageStars}
+        </label>
         <br />
-        <label>Number of reviews: {numberOfReviews}</label>
+        <label>
+          <b>Number of reviews:</b> {numberOfReviews}
+        </label>
+        <br />
+        <label>
+          <b>Enrolled:</b> {enrolled ? "yes" : "no"}
+        </label>
         <br />
         <input type="submit" />
       </form>
+      <h1>About the instructor</h1>
+      <label>
+        <b>Name:</b> {instructor.name}
+      </label>
+      <br />
+      <label>
+        <b>Experience:</b> {instructor.experience}
+      </label>
+      <br />
+      <label>
+        <b>Bio:</b> {instructor.bio}
+      </label>
+      <br />
+      <label>
+        <b>Affiliation:</b> {instructor.affiliation}
+      </label>
+      <br />
       <h1>Reviews</h1>
       <ul>
         {reviews.map((r) => (
-          <li>
+          <li key={r.id}>
             {r.stars} stars by {r.studentName}: {r.body}
           </li>
         ))}
@@ -437,10 +486,73 @@ const AdminPlatformUsagePage = (props: { authToken: string }) => {
   );
 };
 
+const NotificationsPage = (props: { authToken: string }) => {
+  const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const res = await sendRequest(props.authToken, "GET", "/api/elearning/notification");
+      if (res.status !== 200) return;
+      const body = await res.json();
+      setNotifications(body);
+      body.forEach((n: NotificationResponse) => {
+        sendRequest(props.authToken, "PUT", `/api/elearning/notification/${n.id}`, { isRead: true });
+      });
+    })();
+  }, [props.authToken]);
+
+  const handleFilterByRead = async () => {
+    const res = await sendRequest(props.authToken, "GET", "/api/elearning/notification?isRead=true");
+    if (res.status !== 200) return;
+    setNotifications(await res.json());
+  };
+
+  const handleFilterByUnread = async () => {
+    const res = await sendRequest(props.authToken, "GET", "/api/elearning/notification?isRead=false");
+    if (res.status !== 200) return;
+    setNotifications(await res.json());
+  };
+
+  const handleAll = async () => {
+    const res = await sendRequest(props.authToken, "GET", "/api/elearning/notification");
+    if (res.status !== 200) return;
+    setNotifications(await res.json());
+  };
+
+  return (
+    <div>
+      <h1>Notifications</h1>
+      <button onClick={handleFilterByUnread}>unread</button> - <button onClick={handleFilterByRead}>read</button> -{" "}
+      <button onClick={handleAll}>all</button>
+      <ul>
+        {notifications.map((n) => (
+          <li key={n.id}>
+            {n.isRead ? <b>{n.title}</b> : n.title}
+            <br />
+            {n.body}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+const NotificationsButton = (props: { setPage: ElementSetter; authToken: string }) => {
+  return (
+    <button
+      onClick={() => {
+        props.setPage(<NotificationsPage authToken={props.authToken} />);
+      }}
+    >
+      Notifications
+    </button>
+  );
+};
+
 const AdminNavbar = (props: { authToken: string; ctx: Context; setNavbar: ElementSetter; setPage: ElementSetter }) => {
   return (
     <div>
-      Logged in as: {props.ctx.name} -{" "}
+      Logged in as: {props.ctx.name} - <NotificationsButton setPage={props.setPage} authToken={props.authToken} /> -{" "}
       <button onClick={() => props.setPage(<AllUsersPage authToken={props.authToken} setPage={props.setPage} />)}>
         Manage users
       </button>{" "}
