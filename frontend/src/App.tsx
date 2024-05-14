@@ -288,8 +288,6 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; ctx:
   const [description, setDescription] = useState<string>("");
   const [startDate, setStartDate] = useState<number>(0);
   const [endDate, setEndDate] = useState<number>(0);
-  const [startDateChanged, setStartDateChanged] = useState<boolean>(false);
-  const [endDateChanged, setEndDateChanged] = useState<boolean>(false);
   const [category, setCategory] = useState<string>("");
   const [capacity, setCapacity] = useState<number>(0);
   const [status, setStatus] = useState<string>("ACCEPTED");
@@ -345,8 +343,8 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; ctx:
     const res = await sendRequest(props.authToken, "PUT", `/api/elearning/course/${props.course.id}`, {
       name,
       description,
-      startDate: startDateChanged ? startDate : undefined,
-      endDate: endDateChanged ? endDate : undefined,
+      startDate: startDate,
+      endDate: endDate,
       category,
       capacity,
       status,
@@ -402,24 +400,18 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; ctx:
         />
         <br />
         <input
-          type="number"
+          type="datetime-local"
           title="Start date (unix seconds)"
-          value={startDate}
-          onChange={(e) => {
-            setStartDate(parseInt(e.target.value));
-            setStartDateChanged(true);
-          }}
+          value={epochToDateTimeLocal(startDate)}
+          onChange={(e) => setStartDate(dateTimeLocalToEpoch(e.target.value))}
           disabled={readonly}
         />
         <br />
         <input
-          type="number"
+          type="datetime-local"
           title="End date (unix seconds)"
-          value={endDate}
-          onChange={(e) => {
-            setEndDate(parseInt(e.target.value));
-            setEndDateChanged(true);
-          }}
+          value={epochToDateTimeLocal(endDate)}
+          onChange={(e) => setEndDate(dateTimeLocalToEpoch(e.target.value))}
           disabled={readonly}
         />
         <br />
@@ -513,6 +505,15 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; ctx:
   );
 };
 
+const epochToDateTimeLocal = (epoch: number) => {
+  const date = new Date(epoch * 1000);
+  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date
+    .getDate()
+    .toString()
+    .padStart(2, "0")}T${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+};
+const dateTimeLocalToEpoch = (dateTimeLocal: string) => Math.floor(new Date(dateTimeLocal).getTime() / 1000);
+
 const CourseCreatePage = (props: { authToken: string }) => {
   const [name, setName] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -550,18 +551,18 @@ const CourseCreatePage = (props: { authToken: string }) => {
         />
         <br />
         <input
-          type="number"
+          type="datetime-local"
           title="Start date (unix seconds)"
-          value={startDate}
-          onChange={(e) => setStartDate(parseInt(e.target.value))}
+          value={epochToDateTimeLocal(startDate)}
+          onChange={(e) => setStartDate(dateTimeLocalToEpoch(e.target.value))}
           required
         />
         <br />
         <input
-          type="number"
+          type="datetime-local"
           title="End date (unix seconds)"
-          value={endDate}
-          onChange={(e) => setEndDate(parseInt(e.target.value))}
+          value={epochToDateTimeLocal(endDate)}
+          onChange={(e) => setEndDate(dateTimeLocalToEpoch(e.target.value))}
           required
         />
         <br />

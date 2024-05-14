@@ -129,8 +129,8 @@ public class Api {
     }
 
     private String getInvalidCourseDatesError(Long startDate, Long endDate) {
-        if (endDate < startDate)
-            return "End date can't be before the start date";
+        if (endDate <= startDate)
+            return "End date can't be before or equal to the start date";
         if ((startDate * 1000) < dateTimeService.getTimestamp())
             return "Course can't start in the past";
         return null;
@@ -296,9 +296,15 @@ public class Api {
                 bindings.addLast((i, st) -> st.setString(i, req.description));
             }
 
+            if (req.startDate == null && req.endDate != null || req.startDate != null && req.endDate == null) {
+                return Response.status(400)
+                        .entity(new MessageResponse("start date and end date must be changed together")).build();
+            }
+
             if (req.startDate != null && req.endDate != null) {
-                if ((err = getInvalidCourseDatesError(req.startDate, req.endDate)) != null)
-                    return Response.status(400).entity(new MessageResponse(err)).build();
+                if (req.endDate <= req.startDate)
+                    return Response.status(400)
+                            .entity(new MessageResponse("end date can't be before or equal to the start date")).build();
                 updates.add("startDate = ?");
                 updates.add("endDate = ?");
                 bindings.addLast((i, st) -> st.setLong(i, req.startDate));

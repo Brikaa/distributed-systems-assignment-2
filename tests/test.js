@@ -387,7 +387,10 @@ const assert = require('assert');
     const text = await res.text();
     console.log(text);
     assert.equal(res.status, 400);
-    assert.equal(JSON.parse(text)['message'], "End date can't be before the start date");
+    assert.equal(
+      JSON.parse(text)['message'],
+      "End date can't be before or equal to the start date"
+    );
   }
 
   {
@@ -735,6 +738,19 @@ const assert = require('assert');
     });
     console.log(await res.text());
     assert.equal(res.status, 200);
+  }
+
+  {
+    console.log('admin tries to change i1c1 end date without start date');
+    const res = await sendRequest('PUT', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}`, {
+      description: 'i1c1dd',
+      endDate: i1C1End + 1,
+      status: 'ACCEPTED'
+    });
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 400);
+    assert.equal(JSON.parse(text)['message'], 'start date and end date must be changed together');
   }
 
   {

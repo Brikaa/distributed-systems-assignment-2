@@ -26,6 +26,5 @@
     - Course 1 - Category - rating - enrollments/capacity (view, enroll (if not enrolled and not started), cancel enrollment (if enrolled), create review (if finished and enrolled))
 
 - TODO:
-  - notification counter
-  - Date picker
   - Test sort by stars
+  - notification counter
