@@ -37,6 +37,25 @@ interface UserInList {
   name: string;
 }
 
+interface ReviewResponse {
+  id: string;
+  studentId: string;
+  studentName: string;
+  stars: number;
+  body: string;
+}
+
+interface UsageResponse {
+  numberOfStudents: number;
+  numberOfInstructors: number;
+  numberOfAdmins: number;
+  numberOfAcceptedCourses: number;
+  numberOfPendingCourses: number;
+  numberOfAcceptedEnrollments: number;
+  numberOfRejectedEnrollments: number;
+  numberOfPendingEnrollments: number;
+}
+
 const sendRequest = async (authToken: string | null, method: string, url: string, body?: any) => {
   const opts: RequestOptions = {
     method,
@@ -78,7 +97,7 @@ const UserEditPage = (props: { user: UserInList; authToken: string }) => {
     setExperience(u.experience);
     setBio(u.bio);
     setAffiliation(u.affiliation);
-  }, [props.authToken, props.user]);
+  }, [props.authToken, props.user.id]);
 
   useEffect(() => {
     getAndSetUser();
@@ -191,6 +210,7 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string }) =>
   const [averageStars, setAverageStars] = useState<number>();
   const [numberOfReviews, setNumberOfReviews] = useState<number>();
   const [numberOfEnrollments, setNumberOfEnrollments] = useState<number>();
+  const [reviews, setReviews] = useState<ReviewResponse[]>([]);
 
   const getAndSetCourse = useCallback(async () => {
     const res = await sendRequest(props.authToken, "GET", `/api/elearning/course/${props.course.id}`);
@@ -207,11 +227,16 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string }) =>
     setCategory(c.category);
     setCapacity(c.capacity);
     setStatus(c.status);
-  }, [props.authToken, props.course]);
+  }, [props.authToken, props.course.id]);
 
   useEffect(() => {
     getAndSetCourse();
-  }, [getAndSetCourse]);
+    (async () => {
+      const res = await sendRequest(props.authToken, "GET", `/api/elearning/course/${props.course.id}/review`);
+      if (res.status !== 200) return;
+      setReviews(await res.json());
+    })();
+  }, [getAndSetCourse, props.authToken, props.course.id]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -231,6 +256,7 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string }) =>
 
   return (
     <div>
+      <h1>Course info</h1>
       <form onSubmit={handleSubmit}>
         <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
         <br />
@@ -285,6 +311,14 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string }) =>
         <br />
         <input type="submit" />
       </form>
+      <h1>Reviews</h1>
+      <ul>
+        {reviews.map((r) => (
+          <li>
+            {r.stars} stars by {r.studentName}: {r.body}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };
@@ -346,16 +380,77 @@ const AdminListCourses = (props: { authToken: string; setPage: ElementSetter }) 
   );
 };
 
+const AdminPlatformUsagePage = (props: { authToken: string }) => {
+  const [usage, setUsage] = useState<UsageResponse>({
+    numberOfAcceptedCourses: 0,
+    numberOfAcceptedEnrollments: 0,
+    numberOfAdmins: 0,
+    numberOfInstructors: 0,
+    numberOfPendingCourses: 0,
+    numberOfPendingEnrollments: 0,
+    numberOfRejectedEnrollments: 0,
+    numberOfStudents: 0,
+  });
+  useEffect(() => {
+    (async () => {
+      const res = await sendRequest(props.authToken, "GET", "/api/elearning/usage");
+      if (res.status !== 200) return;
+      setUsage(await res.json());
+    })();
+  }, [props.authToken]);
+
+  return (
+    <div>
+      <label>
+        <b>numberOfStudents:</b> {usage.numberOfStudents}
+      </label>
+      <br />
+      <label>
+        <b>numberOfInstructors:</b> {usage.numberOfInstructors}
+      </label>
+      <br />
+      <label>
+        <b>numberOfAdmins:</b> {usage.numberOfAdmins}
+      </label>
+      <br />
+      <label>
+        <b>numberOfAcceptedCourses:</b> {usage.numberOfAcceptedCourses}
+      </label>
+      <br />
+      <label>
+        <b>numberOfPendingCourses:</b> {usage.numberOfPendingCourses}
+      </label>
+      <br />
+      <label>
+        <b>numberOfAcceptedEnrollments:</b> {usage.numberOfAcceptedEnrollments}
+      </label>
+      <br />
+      <label>
+        <b>numberOfRejectedEnrollments:</b> {usage.numberOfRejectedEnrollments}
+      </label>
+      <br />
+      <label>
+        <b>numberOfPendingEnrollments:</b> {usage.numberOfPendingEnrollments}
+      </label>
+      <br />
+    </div>
+  );
+};
+
 const AdminNavbar = (props: { authToken: string; ctx: Context; setNavbar: ElementSetter; setPage: ElementSetter }) => {
   return (
     <div>
       Logged in as: {props.ctx.name} -{" "}
       <button onClick={() => props.setPage(<AllUsersPage authToken={props.authToken} setPage={props.setPage} />)}>
-        View users
+        Manage users
       </button>{" "}
       -{" "}
       <button onClick={() => props.setPage(<AdminListCourses authToken={props.authToken} setPage={props.setPage} />)}>
-        List courses
+        View and manage courses
+      </button>{" "}
+      -{" "}
+      <button onClick={() => props.setPage(<AdminPlatformUsagePage authToken={props.authToken} />)}>
+        Track platform usage
       </button>{" "}
       - <LogoutButton setNavbar={props.setNavbar} setPage={props.setPage} />
     </div>
