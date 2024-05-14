@@ -169,7 +169,7 @@ const UserEditPage = (props: { user: UserInList; authToken: string }) => {
           onChange={(e) => setAffiliation(e.target.value)}
         />
         <br />
-        <input type="submit" />
+        <input type="submit" value="Update" />
       </form>
     </div>
   );
@@ -194,7 +194,6 @@ const AllUsersPage = (props: { authToken: string; setPage: ElementSetter }) => {
     if (res2.status !== 200) return;
     setUsers(await res2.json());
   };
-  // TODO: on button click
   return (
     <ul>
       {users.map((u) => (
@@ -210,10 +209,10 @@ const AllUsersPage = (props: { authToken: string; setPage: ElementSetter }) => {
   );
 };
 
-const CourseEditPage = (props: { course: CourseResponse; authToken: string }) => {
+const CourseEditPage = (props: { course: CourseResponse; authToken: string; readonly: boolean }) => {
   const [name, setName] = useState<string>();
   const [description, setDescription] = useState<string>();
-  const [startDate, setStartDate] = useState<number>(Math.floor(Date.now() / 1000));
+  const [startDate, setStartDate] = useState<number>();
   const [endDate, setEndDate] = useState<number>();
   const [startDateChanged, setStartDateChanged] = useState<boolean>(false);
   const [endDateChanged, setEndDateChanged] = useState<boolean>(false);
@@ -281,14 +280,21 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string }) =>
   return (
     <div>
       <h1>Course info</h1>
-      <form onSubmit={handleSubmit}>
-        <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+      <form onSubmit={props.readonly ? () => {} : handleSubmit}>
+        <input
+          type="text"
+          placeholder="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={props.readonly}
+        />
         <br />
         <input
           type="text"
           placeholder="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          disabled={props.readonly}
         />
         <br />
         <input
@@ -299,6 +305,7 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string }) =>
             setStartDate(parseInt(e.target.value));
             setStartDateChanged(true);
           }}
+          disabled={props.readonly}
         />
         <br />
         <input
@@ -309,18 +316,26 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string }) =>
             setEndDate(parseInt(e.target.value));
             setEndDateChanged(true);
           }}
+          disabled={props.readonly}
         />
         <br />
-        <input type="text" placeholder="Category" value={category} onChange={(e) => setCategory(e.target.value)} />
+        <input
+          type="text"
+          placeholder="Category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          disabled={props.readonly}
+        />
         <br />
         <input
           type="number"
           title="Capacity"
           value={capacity}
           onChange={(e) => setCapacity(parseInt(e.target.value))}
+          disabled={props.readonly}
         />
         <br />
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+        <select value={status} onChange={(e) => setStatus(e.target.value)} disabled={props.readonly}>
           <option value="ACCEPTED">ACCEPTED</option>
           <option value="PENDING">PENDING</option>
         </select>
@@ -341,7 +356,7 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string }) =>
           <b>Enrolled:</b> {enrolled ? "yes" : "no"}
         </label>
         <br />
-        <input type="submit" />
+        {!props.readonly && <input type="submit" value="Update" />}
       </form>
       <h1>About the instructor</h1>
       <label>
@@ -349,7 +364,7 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string }) =>
       </label>
       <br />
       <label>
-        <b>Experience:</b> {instructor.experience}
+        <b>Experience:</b> {instructor.experience} years
       </label>
       <br />
       <label>
@@ -372,7 +387,81 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string }) =>
   );
 };
 
-const AdminListCourses = (props: { authToken: string; setPage: ElementSetter }) => {
+const CourseCreatePage = (props: { authToken: string }) => {
+  const [name, setName] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
+  const [startDate, setStartDate] = useState<number>(Math.floor(Date.now() / 1000));
+  const [endDate, setEndDate] = useState<number>(Math.floor(Date.now() / 1000));
+  const [category, setCategory] = useState<string>("");
+  const [capacity, setCapacity] = useState<number>(1);
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const res = await sendRequest(props.authToken, "POST", `/api/elearning/course`, {
+      name,
+      description,
+      startDate,
+      endDate,
+      category,
+      capacity,
+    });
+    if (res.status !== 200) return;
+    alert("Success!");
+  };
+
+  return (
+    <div>
+      <h1>Course info</h1>
+      <form onSubmit={handleSubmit}>
+        <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+        <br />
+        <input
+          type="text"
+          placeholder="Description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          required
+        />
+        <br />
+        <input
+          type="number"
+          title="Start date (unix seconds)"
+          value={startDate}
+          onChange={(e) => setStartDate(parseInt(e.target.value))}
+          required
+        />
+        <br />
+        <input
+          type="number"
+          title="End date (unix seconds)"
+          value={endDate}
+          onChange={(e) => setEndDate(parseInt(e.target.value))}
+          required
+        />
+        <br />
+        <input
+          type="text"
+          placeholder="Category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          required
+        />
+        <br />
+        <input
+          type="number"
+          title="Capacity"
+          value={capacity}
+          onChange={(e) => setCapacity(parseInt(e.target.value))}
+          required
+        />
+        <br />
+        <input type="submit" value="Create" />
+      </form>
+    </div>
+  );
+};
+
+const ListCoursesPage = (props: { ctx: Context; authToken: string; setPage: ElementSetter }) => {
   const [courses, setCourses] = useState<CourseResponse[]>([]);
   const [name, setName] = useState<string>("");
   const [category, setCategory] = useState<string>("");
@@ -418,8 +507,15 @@ const AdminListCourses = (props: { authToken: string; setPage: ElementSetter }) 
             {c.name} - {c.category} - by {c.instructorName} - {new Date(c.startDate * 1000).toISOString()} till{" "}
             {new Date(c.endDate * 1000).toISOString()} - averageStars: {c.averageStars} ({c.numberOfReviews} reviews) -
             capacity: {c.numberOfEnrollments}/{c.capacity} (
-            <button onClick={() => props.setPage(<CourseEditPage authToken={props.authToken} course={c} />)}>
-              View/edit
+            <button
+              onClick={() =>
+                props.setPage(
+                  <CourseEditPage authToken={props.authToken} course={c} readonly={props.ctx.role !== "ADMIN"} />
+                )
+              }
+            >
+              {/* TODO: instructor edit their own courses? */}
+              {props.ctx.role === "ADMIN" ? "View/edit" : "View"}
             </button>
             , <button onClick={() => handleDelete(c.id)}>Delete</button>)
           </li>
@@ -552,13 +648,41 @@ const NotificationsButton = (props: { setPage: ElementSetter; authToken: string 
 const AdminNavbar = (props: { authToken: string; ctx: Context; setNavbar: ElementSetter; setPage: ElementSetter }) => {
   return (
     <div>
-      Logged in as: {props.ctx.name} - <NotificationsButton setPage={props.setPage} authToken={props.authToken} /> -{" "}
+      Logged in as: {props.ctx.name} ({props.ctx.role}) -{" "}
+      <NotificationsButton setPage={props.setPage} authToken={props.authToken} /> -{" "}
       <button onClick={() => props.setPage(<AllUsersPage authToken={props.authToken} setPage={props.setPage} />)}>
         Manage users
       </button>{" "}
       -{" "}
-      <button onClick={() => props.setPage(<AdminListCourses authToken={props.authToken} setPage={props.setPage} />)}>
+      <button
+        onClick={() =>
+          props.setPage(<ListCoursesPage authToken={props.authToken} setPage={props.setPage} ctx={props.ctx} />)
+        }
+      >
         View and manage courses
+      </button>{" "}
+      - <LogoutButton setNavbar={props.setNavbar} setPage={props.setPage} />
+    </div>
+  );
+};
+
+const InstructorNavbar = (props: {
+  authToken: string;
+  ctx: Context;
+  setNavbar: ElementSetter;
+  setPage: ElementSetter;
+}) => {
+  return (
+    <div>
+      Logged in as: {props.ctx.name} ({props.ctx.role}) -{" "}
+      <NotificationsButton setPage={props.setPage} authToken={props.authToken} /> -{" "}
+      <button onClick={() => props.setPage(<CourseCreatePage authToken={props.authToken} />)}>Create a course</button> -{" "}
+      <button
+        onClick={() =>
+          props.setPage(<ListCoursesPage authToken={props.authToken} setPage={props.setPage} ctx={props.ctx} />)
+        }
+      >
+        View courses
       </button>{" "}
       -{" "}
       <button onClick={() => props.setPage(<AdminPlatformUsagePage authToken={props.authToken} />)}>
@@ -619,7 +743,7 @@ const RegistrationPage = () => {
               min="0"
               value={experience}
               onChange={(e) => setExperience(parseInt(e.target.value))}
-              title="Experience"
+              title="Years of experience"
               required
             />
             <br />
@@ -635,7 +759,7 @@ const RegistrationPage = () => {
           required
         />
         <br />
-        <input type="submit" />
+        <input type="submit" value="Register" />
       </form>
     </div>
   );
@@ -657,8 +781,12 @@ const GuestNavbar = (props: { setNavbar: ElementSetter; setPage: ElementSetter }
     const ctx = (await ctxRes.json()) as Context;
     if (ctx.role === "ADMIN") {
       props.setNavbar(<AdminNavbar ctx={ctx} setNavbar={props.setNavbar} setPage={props.setPage} authToken={token} />);
-      props.setPage(<BlankPage />);
+    } else if (ctx.role === "INSTRUCTOR") {
+      props.setNavbar(
+        <InstructorNavbar ctx={ctx} setNavbar={props.setNavbar} setPage={props.setPage} authToken={token} />
+      );
     }
+    props.setPage(<BlankPage />);
   };
 
   return (
@@ -673,7 +801,7 @@ const BlankPage = () => <div></div>;
 
 function App() {
   const [navbar, setNavbar] = useState<JSX.Element | null>(null);
-  const [page, setPage] = useState<JSX.Element | null>(<BlankPage />);
+  const [page, setPage] = useState<JSX.Element>(<BlankPage />);
   useEffect(() => {
     setNavbar(<GuestNavbar setNavbar={setNavbar} setPage={setPage} />);
   }, []);
