@@ -28,3 +28,4 @@
 - TODO:
   - notification counter
   - Date picker
+  - Test sort by stars

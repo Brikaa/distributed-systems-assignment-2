@@ -150,7 +150,7 @@ const UserEditPage = (props: { user: UserInList; authToken: string }) => {
     });
     if (res.status !== 200) return;
     alert("Success!");
-    await getAndSetUser();
+    getAndSetUser();
   };
 
   return (
@@ -229,7 +229,12 @@ const AllUsersPage = (props: { authToken: string; setPage: ElementSetter }) => {
   );
 };
 
-const Enrollments = (props: { authToken: string; courseId: string; courseStart: number }) => {
+const Enrollments = (props: {
+  authToken: string;
+  courseId: string;
+  courseStart: number;
+  getAndSetCourse: () => Promise<void>;
+}) => {
   const [enrollments, setEnrollments] = useState<InstructorEnrollmentResponse[]>([]);
 
   const getAndSetEnrollments = useCallback(async () => {
@@ -244,7 +249,8 @@ const Enrollments = (props: { authToken: string; courseId: string; courseStart: 
     });
     if (res.status !== 202) return;
     alert("Submitted. We will process your request");
-    await getAndSetEnrollments();
+    getAndSetEnrollments();
+    props.getAndSetCourse();
   };
 
   useEffect(() => {
@@ -327,7 +333,7 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; ctx:
     setInstructor(await res2.json());
 
     if (c.status === "PENDING") return;
-    await getAndSetReviews();
+    getAndSetReviews();
   }, [props.authToken, props.course.id, props.course.instructorId, getAndSetReviews]);
 
   useEffect(() => {
@@ -372,6 +378,7 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; ctx:
     if (res.status !== 200) return;
     alert("Review submitted successfully");
     getAndSetReviews();
+    getAndSetCourse();
   };
 
   return (
@@ -495,7 +502,12 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; ctx:
         ))}
       </ul>
       {props.ctx.role === "INSTRUCTOR" && props.ctx.id === props.course.instructorId && (
-        <Enrollments authToken={props.authToken} courseId={props.course.id} courseStart={props.course.startDate} />
+        <Enrollments
+          authToken={props.authToken}
+          courseId={props.course.id}
+          courseStart={props.course.startDate}
+          getAndSetCourse={getAndSetCourse}
+        />
       )}
     </div>
   );
@@ -816,7 +828,7 @@ const StudentEnrollmentsPage = (props: { authToken: string }) => {
     const res = await sendRequest(props.authToken, "DELETE", `/api/elearning/enrollment/${enrollmentId}`);
     if (res.status !== 202) return;
     alert("Submitted. We will process your request");
-    await getAndSetEnrollments("");
+    getAndSetEnrollments("");
   };
 
   return (
