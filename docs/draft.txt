@@ -96,9 +96,9 @@
   - Student cancels unauthorized enrollment
   - Health check instead of sleep while running tests
   - Parallelize tests
+  - Measure code coverage
 
 - Test todo
-  - Admin manage user accounts
   - Test enrolling in a full course
   - Test accepting enrollment in a full course
   - Test enrolling in a current course
