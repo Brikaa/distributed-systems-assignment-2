@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.UUID;
@@ -302,8 +301,8 @@ public class Api {
                     return Response.status(400).entity(new MessageResponse(err)).build();
                 updates.add("startDate = ?");
                 updates.add("endDate = ?");
-                bindings.addLast((i, st) -> st.setTimestamp(i, new Timestamp(req.startDate)));
-                bindings.addLast((i, st) -> st.setTimestamp(i, new Timestamp(req.endDate)));
+                bindings.addLast((i, st) -> st.setLong(i, req.startDate));
+                bindings.addLast((i, st) -> st.setLong(i, req.endDate));
             }
 
             if (req.category != null) {

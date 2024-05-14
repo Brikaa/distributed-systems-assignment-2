@@ -300,6 +300,12 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; ctx:
   });
   const readonly = props.ctx.role !== "ADMIN";
 
+  const getAndSetReviews = useCallback(async () => {
+    const res = await sendRequest(props.authToken, "GET", `/api/elearning/course/${props.course.id}/review`);
+    if (res.status !== 200) return;
+    setReviews(await res.json());
+  }, [props.course.id, props.authToken]);
+
   const getAndSetCourse = useCallback(async () => {
     const res = await sendRequest(props.authToken, "GET", `/api/elearning/course/${props.course.id}`);
     if (res.status !== 200) return;
@@ -321,10 +327,8 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; ctx:
     setInstructor(await res2.json());
 
     if (c.status === "PENDING") return;
-    const res3 = await sendRequest(props.authToken, "GET", `/api/elearning/course/${props.course.id}/review`);
-    if (res3.status !== 200) return;
-    setReviews(await res3.json());
-  }, [props.authToken, props.course.id, props.course.instructorId]);
+    await getAndSetReviews();
+  }, [props.authToken, props.course.id, props.course.instructorId, getAndSetReviews]);
 
   useEffect(() => {
     getAndSetCourse();
@@ -350,6 +354,24 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; ctx:
     const res = await sendRequest(props.authToken, "POST", `/api/elearning/course/${props.course.id}/enrollment`);
     if (res.status !== 202) return;
     alert("Submitted. We will process your request");
+  };
+
+  const handleReview = async () => {
+    const starsStr = prompt("Number of stars (0 - 5 inclusive)");
+    if (starsStr === null) return;
+    const stars = parseInt(starsStr);
+    if (isNaN(stars) || stars < 0 || stars > 5) {
+      alert("Stars must be a number that is between 0 and 5 (inclusive)");
+      return;
+    }
+    const body = prompt("Review body");
+    const res = await sendRequest(props.authToken, "POST", `/api/elearning/course/${props.course.id}/review`, {
+      stars,
+      body,
+    });
+    if (res.status !== 200) return;
+    alert("Review submitted successfully");
+    getAndSetReviews();
   };
 
   return (
@@ -451,12 +473,18 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; ctx:
       </label>
       <br />
       {props.ctx.role === "STUDENT" && (
-        <button
-          onClick={handleEnroll}
-          disabled={enrolled || capacity > numberOfEnrollments || startDate * 1000 > Date.now()}
-        >
-          Enroll
-        </button>
+        <>
+          <button
+            onClick={handleEnroll}
+            disabled={enrolled || capacity <= numberOfEnrollments || startDate * 1000 <= Date.now()}
+          >
+            Enroll
+          </button>{" "}
+          -{" "}
+          <button onClick={handleReview} disabled={!enrolled || Date.now() <= endDate * 1000}>
+            Review
+          </button>
+        </>
       )}
       <h1>Reviews</h1>
       <ul>
@@ -590,9 +618,9 @@ const CoursesListPage = (props: { ctx: Context; authToken: string; setPage: Elem
       <ul>
         {courses.map((c) => (
           <li key={c.id}>
-            {c.name} - {c.category} - by {c.instructorName} - {new Date(c.startDate * 1000).toISOString()} till{" "}
-            {new Date(c.endDate * 1000).toISOString()} - averageStars: {c.averageStars} ({c.numberOfReviews} reviews) -
-            capacity: {c.numberOfEnrollments}/{c.capacity} (
+            {c.name} - {c.category} - by {c.instructorName} - {new Date(c.startDate * 1000).toLocaleString()} till{" "}
+            {new Date(c.endDate * 1000).toLocaleString()} - averageStars: {c.averageStars} ({c.numberOfReviews} reviews)
+            - capacity: {c.numberOfEnrollments}/{c.capacity} (
             <button
               onClick={() => props.setPage(<CourseEditPage authToken={props.authToken} course={c} ctx={props.ctx} />)}
             >
@@ -672,23 +700,22 @@ const AdminPlatformUsagePage = (props: { authToken: string }) => {
 const NotificationsPage = (props: { authToken: string }) => {
   const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
 
-  useEffect(() => {
-    (async () => {
-      const res = await sendRequest(props.authToken, "GET", "/api/elearning/notification");
+  const handleFilter = useCallback(
+    async (queryParam: string) => {
+      const res = await sendRequest(props.authToken, "GET", `/api/elearning/notification${queryParam}`);
       if (res.status !== 200) return;
       const body = await res.json();
       setNotifications(body);
       body.forEach((n: NotificationResponse) => {
-        sendRequest(props.authToken, "PUT", `/api/elearning/notification/${n.id}`, { isRead: true });
+        if (!n.isRead) sendRequest(props.authToken, "PUT", `/api/elearning/notification/${n.id}`, { isRead: true });
       });
-    })();
-  }, [props.authToken]);
+    },
+    [props.authToken]
+  );
 
-  const handleFilter = async (queryParam: string) => {
-    const res = await sendRequest(props.authToken, "GET", `/api/elearning/notification${queryParam}`);
-    if (res.status !== 200) return;
-    setNotifications(await res.json());
-  };
+  useEffect(() => {
+    handleFilter("?isRead=false");
+  }, [handleFilter]);
 
   return (
     <div>
@@ -789,7 +816,7 @@ const StudentEnrollmentsPage = (props: { authToken: string }) => {
     const res = await sendRequest(props.authToken, "DELETE", `/api/elearning/enrollment/${enrollmentId}`);
     if (res.status !== 202) return;
     alert("Submitted. We will process your request");
-    setEnrollments(await res.json());
+    await getAndSetEnrollments("");
   };
 
   return (

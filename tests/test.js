@@ -724,9 +724,13 @@ const assert = require('assert');
   }
 
   {
-    console.log('admin accepts i1c1 and changes its description to i1c1dd');
+    console.log('admin accepts i1c1 and changes its description to i1c1dd and its dates');
+    ++i1C1Start;
+    ++i1C1End;
     const res = await sendRequest('PUT', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}`, {
       description: 'i1c1dd',
+      startDate: i1C1Start,
+      endDate: i1C1End,
       status: 'ACCEPTED'
     });
     console.log(await res.text());
