@@ -214,7 +214,7 @@ public class Api {
             if (role.equals(STUDENT_ROLE))
                 courseFilter = " AND Course.status = 'ACCEPTED'";
             if (role.equals(INSTRUCTOR_ROLE))
-                courseFilter = " AND Course.status = 'ACCEPTED' OR Course.instructorId = ?";
+                courseFilter = " AND (Course.status = 'ACCEPTED' OR Course.instructorId = ?)";
             try (Connection conn = dataSource.getInstance().getConnection();
                     PreparedStatement st = conn.prepareStatement(String.format(
                             """

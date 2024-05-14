@@ -3,6 +3,7 @@ import React, { FormEvent, useCallback, useEffect, useState } from "react";
 type ElementSetter = (element: JSX.Element) => void;
 
 type Role = "ADMIN" | "INSTRUCTOR" | "STUDENT";
+type EnrollmentStatus = "ACCEPTED" | "PENDING" | "REJECTED";
 
 interface RequestOptions {
   method: string;
@@ -15,6 +16,13 @@ interface Context {
   name: string;
   email: string;
   role: Role;
+}
+
+interface InstructorEnrollmentResponse {
+  id: string;
+  studentId: string;
+  studentName: string;
+  status: EnrollmentStatus;
 }
 
 interface CourseResponse {
@@ -209,7 +217,53 @@ const AllUsersPage = (props: { authToken: string; setPage: ElementSetter }) => {
   );
 };
 
-const CourseEditPage = (props: { course: CourseResponse; authToken: string; readonly: boolean }) => {
+const Enrollments = (props: { authToken: string; courseId: string; courseStart: number }) => {
+  const [enrollments, setEnrollments] = useState<InstructorEnrollmentResponse[]>([]);
+
+  const getAndSetEnrollments = useCallback(async () => {
+    const res = await sendRequest(props.authToken, "GET", `/api/elearning/course/${props.courseId}/enrollment`);
+    if (res.status !== 200) return;
+    setEnrollments(await res.json());
+  }, [props.courseId, props.authToken]);
+
+  const handleEnrollmentUpdate = async (enrollmentId: string, newStatus: EnrollmentStatus) => {
+    const res = await sendRequest(props.authToken, "PUT", `/api/elearning/enrollment/${enrollmentId}`, {
+      status: newStatus,
+    });
+    if (res.status !== 202) return;
+    alert("Success! We will process the enrollment");
+    await getAndSetEnrollments();
+  };
+
+  useEffect(() => {
+    getAndSetEnrollments();
+  }, [getAndSetEnrollments]);
+
+  return (
+    <>
+      <h1>Enrollments</h1>
+      <ul>
+        {enrollments.map((e) => (
+          <li key={e.id}>
+            {e.studentName} - {e.status}{" "}
+            {e.status === "PENDING" && (
+              <>
+                {props.courseStart * 1000 > Date.now() && (
+                  <>
+                    - <button onClick={() => handleEnrollmentUpdate(e.id, "ACCEPTED")}>accept</button>{" "}
+                  </>
+                )}
+                - <button onClick={() => handleEnrollmentUpdate(e.id, "REJECTED")}>reject</button>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+};
+
+const CourseEditPage = (props: { course: CourseResponse; authToken: string; ctx: Context }) => {
   const [name, setName] = useState<string>();
   const [description, setDescription] = useState<string>();
   const [startDate, setStartDate] = useState<number>();
@@ -230,6 +284,7 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; read
     experience: 0,
     name: "",
   });
+  const readonly = props.ctx.role !== "ADMIN";
 
   const getAndSetCourse = useCallback(async () => {
     const res = await sendRequest(props.authToken, "GET", `/api/elearning/course/${props.course.id}`);
@@ -280,13 +335,13 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; read
   return (
     <div>
       <h1>Course info</h1>
-      <form onSubmit={props.readonly ? () => {} : handleSubmit}>
+      <form onSubmit={readonly ? () => {} : handleSubmit}>
         <input
           type="text"
           placeholder="Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          disabled={props.readonly}
+          disabled={readonly}
         />
         <br />
         <input
@@ -294,7 +349,7 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; read
           placeholder="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          disabled={props.readonly}
+          disabled={readonly}
         />
         <br />
         <input
@@ -305,7 +360,7 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; read
             setStartDate(parseInt(e.target.value));
             setStartDateChanged(true);
           }}
-          disabled={props.readonly}
+          disabled={readonly}
         />
         <br />
         <input
@@ -316,7 +371,7 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; read
             setEndDate(parseInt(e.target.value));
             setEndDateChanged(true);
           }}
-          disabled={props.readonly}
+          disabled={readonly}
         />
         <br />
         <input
@@ -324,7 +379,7 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; read
           placeholder="Category"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          disabled={props.readonly}
+          disabled={readonly}
         />
         <br />
         <input
@@ -332,10 +387,10 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; read
           title="Capacity"
           value={capacity}
           onChange={(e) => setCapacity(parseInt(e.target.value))}
-          disabled={props.readonly}
+          disabled={readonly}
         />
         <br />
-        <select value={status} onChange={(e) => setStatus(e.target.value)} disabled={props.readonly}>
+        <select value={status} onChange={(e) => setStatus(e.target.value)} disabled={readonly}>
           <option value="ACCEPTED">ACCEPTED</option>
           <option value="PENDING">PENDING</option>
         </select>
@@ -356,7 +411,7 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; read
           <b>Enrolled:</b> {enrolled ? "yes" : "no"}
         </label>
         <br />
-        {!props.readonly && <input type="submit" value="Update" />}
+        {!readonly && <input type="submit" value="Update" />}
       </form>
       <h1>About the instructor</h1>
       <label>
@@ -383,6 +438,9 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; read
           </li>
         ))}
       </ul>
+      {props.ctx.role === "INSTRUCTOR" && props.ctx.id === props.course.instructorId && (
+        <Enrollments authToken={props.authToken} courseId={props.course.id} courseStart={props.course.startDate} />
+      )}
     </div>
   );
 };
@@ -461,7 +519,7 @@ const CourseCreatePage = (props: { authToken: string }) => {
   );
 };
 
-const ListCoursesPage = (props: { ctx: Context; authToken: string; setPage: ElementSetter }) => {
+const CoursesListPage = (props: { ctx: Context; authToken: string; setPage: ElementSetter }) => {
   const [courses, setCourses] = useState<CourseResponse[]>([]);
   const [name, setName] = useState<string>("");
   const [category, setCategory] = useState<string>("");
@@ -508,11 +566,7 @@ const ListCoursesPage = (props: { ctx: Context; authToken: string; setPage: Elem
             {new Date(c.endDate * 1000).toISOString()} - averageStars: {c.averageStars} ({c.numberOfReviews} reviews) -
             capacity: {c.numberOfEnrollments}/{c.capacity} (
             <button
-              onClick={() =>
-                props.setPage(
-                  <CourseEditPage authToken={props.authToken} course={c} readonly={props.ctx.role !== "ADMIN"} />
-                )
-              }
+              onClick={() => props.setPage(<CourseEditPage authToken={props.authToken} course={c} ctx={props.ctx} />)}
             >
               {/* TODO: instructor edit their own courses? */}
               {props.ctx.role === "ADMIN" ? "View/edit" : "View"}
@@ -623,7 +677,7 @@ const NotificationsPage = (props: { authToken: string }) => {
       <ul>
         {notifications.map((n) => (
           <li key={n.id}>
-            {n.isRead ? <b>{n.title}</b> : n.title}
+            {n.isRead ? n.title : <b>{n.title}</b>}
             <br />
             {n.body}
           </li>
@@ -656,10 +710,14 @@ const AdminNavbar = (props: { authToken: string; ctx: Context; setNavbar: Elemen
       -{" "}
       <button
         onClick={() =>
-          props.setPage(<ListCoursesPage authToken={props.authToken} setPage={props.setPage} ctx={props.ctx} />)
+          props.setPage(<CoursesListPage authToken={props.authToken} setPage={props.setPage} ctx={props.ctx} />)
         }
       >
         View and manage courses
+      </button>{" "}
+      -{" "}
+      <button onClick={() => props.setPage(<AdminPlatformUsagePage authToken={props.authToken} />)}>
+        Track platform usage
       </button>{" "}
       - <LogoutButton setNavbar={props.setNavbar} setPage={props.setPage} />
     </div>
@@ -679,14 +737,10 @@ const InstructorNavbar = (props: {
       <button onClick={() => props.setPage(<CourseCreatePage authToken={props.authToken} />)}>Create a course</button> -{" "}
       <button
         onClick={() =>
-          props.setPage(<ListCoursesPage authToken={props.authToken} setPage={props.setPage} ctx={props.ctx} />)
+          props.setPage(<CoursesListPage authToken={props.authToken} setPage={props.setPage} ctx={props.ctx} />)
         }
       >
         View courses
-      </button>{" "}
-      -{" "}
-      <button onClick={() => props.setPage(<AdminPlatformUsagePage authToken={props.authToken} />)}>
-        Track platform usage
       </button>{" "}
       - <LogoutButton setNavbar={props.setNavbar} setPage={props.setPage} />
     </div>

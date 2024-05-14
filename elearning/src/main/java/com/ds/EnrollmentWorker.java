@@ -111,7 +111,7 @@ public class EnrollmentWorker implements MessageListener {
                 enrollmentSt.setObject(1, enrollmentId);
                 ResultSet enrollmentRs = enrollmentSt.executeQuery();
                 final String invalidEnrollment = "Could not find a pending enrollment with id: " + enrollmentId
-                        + " that was sent to one of your courses.";
+                        + " that was sent to one of your future courses.";
                 if (!enrollmentRs.next()) {
                     createNotification(conn, instructorId, invalidEnrollment);
                     conn.commit();
