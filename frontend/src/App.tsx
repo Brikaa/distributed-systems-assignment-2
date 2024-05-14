@@ -5,6 +5,8 @@ type ElementSetter = (element: JSX.Element) => void;
 type Role = "ADMIN" | "INSTRUCTOR" | "STUDENT";
 type EnrollmentStatus = "ACCEPTED" | "PENDING" | "REJECTED";
 
+const LOCAL_STORAGE_TOKEN = "token";
+
 interface RequestOptions {
   method: string;
   headers: { [key: string]: string };
@@ -103,6 +105,7 @@ const sendRequest = async (authToken: string | null, method: string, url: string
 
 const LogoutButton = (props: { setNavbar: ElementSetter; setPage: ElementSetter }) => {
   const logout = () => {
+    localStorage.removeItem(LOCAL_STORAGE_TOKEN);
     props.setNavbar(<GuestNavbar setNavbar={props.setNavbar} setPage={props.setPage} />);
     props.setPage(<BlankPage />);
   };
@@ -905,6 +908,25 @@ const RegistrationPage = () => {
   );
 };
 
+const renderAccordingToUser = async (token: string, setNavbar: ElementSetter, setPage: ElementSetter) => {
+  const ctxRes = await sendRequest(token, "GET", "/api/user/user");
+  if (ctxRes.status !== 200) {
+    localStorage.removeItem(LOCAL_STORAGE_TOKEN);
+    return;
+  }
+
+  const ctx = (await ctxRes.json()) as Context;
+  if (ctx.role === "ADMIN") {
+    setNavbar(<AdminNavbar ctx={ctx} setNavbar={setNavbar} setPage={setPage} authToken={token} />);
+  } else if (ctx.role === "INSTRUCTOR") {
+    setNavbar(<InstructorNavbar ctx={ctx} setNavbar={setNavbar} setPage={setPage} authToken={token} />);
+  } else if (ctx.role === "STUDENT") {
+    setNavbar(<StudentNavbar authToken={token} ctx={ctx} setNavbar={setNavbar} setPage={setPage} />);
+  }
+  setPage(<BlankPage />);
+  return;
+};
+
 const GuestNavbar = (props: { setNavbar: ElementSetter; setPage: ElementSetter }) => {
   const login = async () => {
     const nameOrEmail = prompt("Name or email");
@@ -915,22 +937,8 @@ const GuestNavbar = (props: { setNavbar: ElementSetter; setPage: ElementSetter }
     if (res.status !== 200) return;
 
     const token = (await res.json())["token"] as string;
-    const ctxRes = await sendRequest(token, "GET", "/api/user/user");
-    if (ctxRes.status !== 200) return;
-
-    const ctx = (await ctxRes.json()) as Context;
-    if (ctx.role === "ADMIN") {
-      props.setNavbar(<AdminNavbar ctx={ctx} setNavbar={props.setNavbar} setPage={props.setPage} authToken={token} />);
-    } else if (ctx.role === "INSTRUCTOR") {
-      props.setNavbar(
-        <InstructorNavbar ctx={ctx} setNavbar={props.setNavbar} setPage={props.setPage} authToken={token} />
-      );
-    } else if (ctx.role === "STUDENT") {
-      props.setNavbar(
-        <StudentNavbar authToken={token} ctx={ctx} setNavbar={props.setNavbar} setPage={props.setPage} />
-      );
-    }
-    props.setPage(<BlankPage />);
+    localStorage.setItem(LOCAL_STORAGE_TOKEN, token);
+    renderAccordingToUser(token, props.setNavbar, props.setPage);
   };
 
   return (
@@ -948,6 +956,8 @@ function App() {
   const [page, setPage] = useState<JSX.Element>(<BlankPage />);
   useEffect(() => {
     setNavbar(<GuestNavbar setNavbar={setNavbar} setPage={setPage} />);
+    const token = localStorage.getItem(LOCAL_STORAGE_TOKEN);
+    if (token !== undefined && token !== null) renderAccordingToUser(token, setNavbar, setPage);
   }, []);
   return (
     <>

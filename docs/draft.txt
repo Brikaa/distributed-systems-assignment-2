@@ -38,11 +38,11 @@
   - Review a course
 
 - Technical debt
+  - Use remote ActiveMQ
   - Use the application server's or a third part connection pool
   - Don't cast to text when comparing UUID
   - Abstract transactions?
   - Document that course startDate and endDate are in epoch seconds
-  - Use remote ActiveMQ
   - Send notifications for runtime errors during asynchronous processing
   - Use SQL transactions in reviews
   - ResultSet rs, if (rs.next()) -> if (st.executeQuery().next())

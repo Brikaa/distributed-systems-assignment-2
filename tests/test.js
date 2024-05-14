@@ -1375,12 +1375,12 @@ const assert = require('assert');
     const expected = [
       {
         title: 'Course enrollment status',
-        body: `Could not find a pending enrollment with id: ${i1C1S3Id} that was sent to one of your courses.`,
+        body: `Could not find a pending enrollment with id: ${i1C1S3Id} that was sent to one of your future courses.`,
         isRead: false
       },
       {
         title: 'Course enrollment status',
-        body: `Could not find a pending enrollment with id: ${i2C1S1Id} that was sent to one of your courses.`,
+        body: `Could not find a pending enrollment with id: ${i2C1S1Id} that was sent to one of your future courses.`,
         isRead: false
       }
     ];

@@ -26,4 +26,4 @@
     - Course 1 - Category - rating - enrollments/capacity (view, enroll (if not enrolled and not started), cancel enrollment (if enrolled), create review (if finished and enrolled))
 
 - TODO:
-  - Routing logic in root component, store token in localStorage
+  - notification counter
