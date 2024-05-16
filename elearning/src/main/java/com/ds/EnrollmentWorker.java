@@ -26,6 +26,9 @@ public class EnrollmentWorker implements MessageListener {
     @EJB
     private DateTimeService dateTimeService;
 
+    @EJB
+    private MessagingFailureService messagingFailureService;
+
     private void createNotification(Connection conn, UUID userId, String body) throws SQLException {
         try (PreparedStatement st = conn.prepareStatement(
                 "INSERT INTO Notification (userId, title, body, isRead) VALUES (?, 'Course enrollment status', ?, ?)")) {
@@ -196,6 +199,7 @@ public class EnrollmentWorker implements MessageListener {
 
     @Override
     public void onMessage(Message rcvMessage) {
+        messagingFailureService.failIfTesting();
         // CREATE:studentId:courseId
         // UPDATE:instructorId:enrollmentId:ACCEPTED|REJECTED
         // DELETE:studentId:enrollmentId

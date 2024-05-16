@@ -51,6 +51,9 @@ public class Api {
     @EJB
     private DateTimeService dateTimeService;
 
+    @EJB
+    private MessagingFailureService messagingFailureService;
+
     @Context
     private HttpServletRequest servletRequest;
 
@@ -784,6 +787,15 @@ public class Api {
         if (!dateTimeService.getShouldFake())
             return Response.status(404).build();
         dateTimeService.setTimestamp(req.date);
+        return Response.status(200).build();
+    }
+
+    @POST
+    @Path("/fail")
+    public Response setMessagingFailure() {
+        if (!messagingFailureService.getShouldFakeFailure())
+            return Response.status(404).build();
+        messagingFailureService.doFailOnNextCall();
         return Response.status(200).build();
     }
 }

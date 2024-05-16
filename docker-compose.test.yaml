@@ -45,6 +45,7 @@ services:
       - DB_HOST=elearning-db
       - USER_SERVICE_URL=http://user:8080/elearning-user
       - FAKE_DATE=true
+      - FAKE_MDB_FAILURE=true
   elearning-db:
     build: elearning-db/
     networks:
@@ -58,14 +59,23 @@ services:
       interval: 3s
       timeout: 5s
       retries: 5
-  test:
+  test1:
     build: tests/
-    profiles: [test]
+    profiles: [test1]
     networks:
       - api
     environment:
       - USER_SERVICE_URL=http://user:8080/elearning-user
       - ELEARNING_SERVICE_URL=http://elearning:8080/elearning
+  test2:
+    build: tests/
+    profiles: [test2]
+    networks:
+      - api
+    environment:
+      - USER_SERVICE_URL=http://user:8080/elearning-user
+      - ELEARNING_SERVICE_URL=http://elearning:8080/elearning
+    command: ["node", "/app/test2.js"]
   queue:
     image: quay.io/artemiscloud/activemq-artemis-broker-kubernetes
     networks:

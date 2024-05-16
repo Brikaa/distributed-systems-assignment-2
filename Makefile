@@ -16,10 +16,14 @@ migrate:
 
 test:
 	make stop-test
-	docker compose -f docker-compose.test.yaml up -t 1 -d --build
+	docker compose -p test1 -f docker-compose.test.yaml up -t 1 -d --build
+	docker compose -p test2 -f docker-compose.test.yaml up -t 1 -d --build
 	sleep 10
-	docker compose -f docker-compose.test.yaml --profile test up -t 1 -d --build
-	docker compose -f docker-compose.test.yaml logs -f test
+	docker compose -p test1 -f docker-compose.test.yaml --profile test1 up -t 1 -d --build
+	docker compose -p test2 -f docker-compose.test.yaml --profile test2 up -t 1 -d --build
+	docker compose -p test1 -f docker-compose.test.yaml logs -f test1 &
+	docker compose -p test2 -f docker-compose.test.yaml logs -f test2 &
 
 stop-test:
-	docker compose -f docker-compose.test.yaml --profile test down -t 1
+	docker compose -p test1 -f docker-compose.test.yaml --profile test1 down -t 1
+	docker compose -p test2 -f docker-compose.test.yaml --profile test2 down -t 1
