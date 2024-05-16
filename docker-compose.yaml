@@ -78,3 +78,11 @@ services:
     depends_on:
       - elearning
       - user
+  queue:
+    image: quay.io/artemiscloud/activemq-artemis-broker-kubernetes
+    networks:
+      - elearning
+    environment:
+      - 'AMQ_USER=admin'
+      - 'AMQ_PASSWORD=admin'
+      - 'AMQ_DATA_DIR=/home/jboss/data'

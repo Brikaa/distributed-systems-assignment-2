@@ -38,7 +38,6 @@
   - Review a course
 
 - Technical debt
-  - Use remote ActiveMQ
   - Use the application server's or a third part connection pool
   - Don't cast to text when comparing UUID
   - Abstract transactions?

@@ -855,7 +855,7 @@ const assert = require('assert');
     const text = await res.text();
     console.log(text);
     assert.equal(res.status, 202);
-    await sleep(10);
+    await sleep(100);
   }
 
   const s1NotificationsAfterInitialEnrollments = [
@@ -1376,7 +1376,7 @@ const assert = require('assert');
     const text = await res.text();
     console.log(text);
     assert.equal(res.status, 202);
-    await sleep(10);
+    await sleep(100);
   }
 
   {
@@ -1506,7 +1506,7 @@ const assert = require('assert');
     const res = await sendRequest('DELETE', `${ELEARNING_SERVICE_URL}/enrollment/${i2C1S1Id}`);
     console.log(await res.text());
     assert.equal(res.status, 202);
-    await sleep(10);
+    await sleep(100);
   }
 
   {

@@ -12,6 +12,7 @@ WORKDIR /app
 COPY . .
 RUN --mount=type=cache,target=/root/.m2 \
     mvn clean package && cp target/elearning.war /opt/wildfly/standalone/deployments && rm -rf /app
+COPY ./standalone-full.xml /opt/wildfly/standalone/configuration/standalone-full.xml
 
 WORKDIR /
 

@@ -66,3 +66,11 @@ services:
     environment:
       - USER_SERVICE_URL=http://user:8080/elearning-user
       - ELEARNING_SERVICE_URL=http://elearning:8080/elearning
+  queue:
+    image: quay.io/artemiscloud/activemq-artemis-broker-kubernetes
+    networks:
+      - elearning
+    environment:
+      - 'AMQ_USER=admin'
+      - 'AMQ_PASSWORD=admin'
+      - 'AMQ_DATA_DIR=/home/jboss/data'
