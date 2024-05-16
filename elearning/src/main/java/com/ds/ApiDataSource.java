@@ -1,8 +1,11 @@
 package com.ds;
 
+import java.util.Properties;
+
 import javax.sql.DataSource;
 
-import org.postgresql.ds.PGSimpleDataSource;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.ejb.Singleton;
@@ -15,11 +18,15 @@ public class ApiDataSource {
 
     @PostConstruct
     public void init() {
-        PGSimpleDataSource ds = new PGSimpleDataSource();
-        ds.setServerNames(new String[] { System.getenv("DB_HOST") });
-        ds.setDatabaseName(System.getenv("DB_NAME"));
-        ds.setUser(System.getenv("DB_USER"));
-        ds.setPassword(System.getenv("DB_PASSWORD"));
+        Properties props = new Properties();
+        props.setProperty("dataSourceClassName", "org.postgresql.ds.PGSimpleDataSource");
+        props.setProperty("dataSource.user", System.getenv("DB_USER"));
+        props.setProperty("dataSource.password", System.getenv("DB_PASSWORD"));
+        props.setProperty("dataSource.databaseName", System.getenv("DB_NAME"));
+        props.setProperty("dataSource.serverName", System.getenv("DB_HOST"));
+
+        HikariConfig config = new HikariConfig(props);
+        HikariDataSource ds = new HikariDataSource(config);
         dataSource = ds;
     }
 
