@@ -1,0 +1,63 @@
+- Register s1
+- Register s1 (fail)
+- Register s2
+- Register i1
+- Register i2
+- Create i1c1
+- Create i1c2
+- Create i2c1
+- i2 view courses
+  - Only i2c1
+
+- admin
+  - Approve i1c1
+  - Approve i1c2
+  - Approve i2c1
+
+- s1
+  - Enroll in i1c1
+  - Enroll in i1c2
+- s2
+  - Enroll in i1c1
+  - Enroll in i1c2
+  - Cancel i1c2 enrollment
+  - Enroll in i2c1
+
+- i1
+  - View i1c1 enrollments
+    - s1, s2
+  - Accept s1's i1c1 enrollment
+  - Accept s2's i1c1 enrollment
+  - View i1c2 enrollment
+    - s1
+  - Accept s1's i1c2 enrollment
+- i2
+  - View i2c1 enrollments
+    - s2
+  - Reject s2's i2c1 enrollment (view notifications at s1, s2)
+  - View courses, play with search
+
+- admin
+  - delete i2c1
+  - View platform usage
+  - Edit i1c1 to make it end in the past
+  - Edit s1, rename to student1
+  - Edit i1, rename to instructor1, set as admin, change bio, change experience
+  - delete i2
+
+- student1
+  - View all enrollments
+    - i1c1, i1c2
+  - View current enrollments
+    - i1c2
+  - View past enrollments
+    - i1c1
+  - 5-star i1c1
+- s2
+  - 0-star i1c1
+  - Sort courses by rating
+    - i1c1 (2.5)
+    - i1c2 (0)
+
+- admin
+  - check i1c2 reviews

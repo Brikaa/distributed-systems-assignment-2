@@ -327,8 +327,7 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; ctx:
     setEnrolled(c.enrolled);
 
     const res2 = await sendRequest(props.authToken, "GET", `/api/user/instructor/${props.course.instructorId}`);
-    if (res2.status !== 200) return;
-    setInstructor(await res2.json());
+    if (res2.status === 200) setInstructor(await res2.json());
 
     if (c.status === "PENDING") return;
     getAndSetReviews();
@@ -369,6 +368,7 @@ const CourseEditPage = (props: { course: CourseResponse; authToken: string; ctx:
       return;
     }
     const body = prompt("Review body");
+    if (body === null) return;
     const res = await sendRequest(props.authToken, "POST", `/api/elearning/course/${props.course.id}/review`, {
       stars,
       body,
