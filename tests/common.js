@@ -33,7 +33,7 @@ const login = async (nameOrEmail, password) => {
 const currentTimeSeconds = () => Math.floor(Date.now() / 1000);
 
 const markAllNotificationsAsRead = async () => {
-  const allNotificationsRes = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/notification`);
+  const allNotificationsRes = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/notification?isRead=false`);
   const text = await allNotificationsRes.text();
   console.log(text);
   assert.equal(allNotificationsRes.status, 200);

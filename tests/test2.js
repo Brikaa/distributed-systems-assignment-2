@@ -176,7 +176,7 @@ const setFailure = async () => {
   }
 
   {
-    console.log('i1 accepts i1c1s2');
+    console.log('i1 tries to accept i1c1s2 (course is full)');
     const res = await sendRequest('PUT', `${ELEARNING_SERVICE_URL}/enrollment/${i1C1S2Id}`, {
       status: 'ACCEPTED'
     });
@@ -187,26 +187,67 @@ const setFailure = async () => {
   }
 
   {
-    console.log('i1 lists all notifications');
-    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/notification`);
+    console.log('i1 lists unread notifications');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/notification?isRead=false`);
     const text = await res.text();
     console.log(text);
     assert.equal(res.status, 200);
     const body = JSON.parse(text);
     body.forEach((notification) => delete notification.id);
-    const expected = [
+    assert.deepStrictEqual(body, [
       {
         title: 'Course enrollment status',
         body: `Can't accept enrollment of id: ${i1C1S2Id} since the course is full.`,
         isRead: false
       }
-    ];
-    expected.sort((a, b) => {
+    ]);
+  }
+
+  await markAllNotificationsAsRead();
+
+  await login('s2', 's2123');
+
+  {
+    console.log('s2 cancels i1c1s2');
+    const res = await sendRequest('DELETE', `${ELEARNING_SERVICE_URL}/enrollment/${i1C1S2Id}`);
+    console.log(await res.text());
+    assert.equal(res.status, 202);
+  }
+
+  {
+    console.log('s2 tries to enroll in i1c1 (course is full)');
+    const res = await sendRequest('POST', `${ELEARNING_SERVICE_URL}/course/${i1C1Id}/enrollment`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 202);
+    await sleep(50);
+  }
+
+  {
+    console.log('s2 lists unread notifications');
+    const res = await sendRequest('GET', `${ELEARNING_SERVICE_URL}/notification?isRead=false`);
+    const text = await res.text();
+    console.log(text);
+    assert.equal(res.status, 200);
+    const body = JSON.parse(text);
+    body.sort((a, b) => {
       if (a.body === b.body) return 0;
       if (a.body < b.body) return -1;
       if (a.body > b.body) return 1;
     });
-    assert.deepStrictEqual(body, expected);
+    body.forEach((notification) => delete notification.id);
+    assert.deepStrictEqual(body, [
+      {
+        title: 'Course enrollment status',
+        body: `Can't enroll in course of id: ${i1C1Id} since it is full.`,
+        isRead: false
+      },
+      {
+        title: 'Course enrollment status',
+        body: `Enrollment of id: ${i1C1S2Id} was cancelled.`,
+        isRead: false
+      }
+    ]);
   }
 
   await markAllNotificationsAsRead();
