@@ -1,3 +1,5 @@
 .vscode/
 target/
 .env
+test-results/*
+!test-results/.gitkeep
