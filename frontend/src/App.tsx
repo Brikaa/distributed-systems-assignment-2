@@ -841,7 +841,8 @@ const StudentEnrollmentsPage = (props: { authToken: string }) => {
       <ul>
         {enrollments.map((e) => (
           <li key={e.id}>
-            {e.courseName} - {e.courseStartDate} till {e.courseEndDate} - {e.status} -{" "}
+            {e.courseName} - {new Date(e.courseStartDate * 1000).toLocaleString()} till{" "}
+            {new Date(e.courseEndDate * 1000).toLocaleString()} - {e.status} -{" "}
             <button onClick={() => handleCancel(e.id)}>cancel</button>
           </li>
         ))}
